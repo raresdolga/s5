@@ -105,3 +105,20 @@ url={https://openreview.net/forum?id=Ai8Hw3AXqks}
 Please reach out if you have any questions.
 
 -- The S5 authors.
+
+
+### Rares Config
+```
+# build
+singularity build S5.sif ./bin/singularity/img.def.def
+
+# singularity run --nv S5.sif bash ./bin/run_experiments/run_lra_cifar2.sh
+
+# create a sweep id
+wandb sweep --project sweep_rotrnn ./bin/wandb/cifar.yaml
+# cancel sweeps
+wandb sweep --cancel baesian-learning/sweep_rotrnn/zd89hg0q
+
+# run this command multiple times on different gpus: Contains agent starting the sweep goven an id
+bash bin/run_experiments/run_lra_cifar2.sh  > 'sweep_rot_block4.log' 2>&1 &
+```

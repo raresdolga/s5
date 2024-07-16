@@ -97,5 +97,9 @@ if __name__ == "__main__":
 	  	       "noBCdecay:      no weight decay on B (ssm lr), no weight decay on C (ssm lr) \\")
 	parser.add_argument("--jax_seed", type=int, default=1919,
 						help="seed randomness")
-
+	
+	parser.add_argument("--ssm_type", type=str, default="s5")
+	parser.add_argument("--max_phase", type=float, default=0.314)
+	parser.add_argument("--r_max", type=float, default=0.99)
+	parser.add_argument("--r_min", type=float, default=0.999)
 	train(parser.parse_args())
