@@ -7,6 +7,7 @@ __pycache__/
 raw_data/
 *.sif
 tmp*/
+temp*
 *.log
 # C extensions
 *.so

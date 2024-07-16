@@ -120,5 +120,5 @@ wandb sweep --project sweep_rotrnn ./bin/wandb/cifar.yaml
 wandb sweep --cancel baesian-learning/sweep_rotrnn/zd89hg0q
 
 # run this command multiple times on different gpus: Contains agent starting the sweep goven an id
-bash bin/run_experiments/run_lra_cifar2.sh  > 'sweep_rot_block4.log' 2>&1 &
+nohup bash bin/run_experiments/run_lra_cifar2.sh  > 'sweep_rot_block4.log' 2>&1 &
 ```
