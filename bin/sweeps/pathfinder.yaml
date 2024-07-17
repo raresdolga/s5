@@ -1,0 +1,70 @@
+program: run_train
+name: pathfinder_rotrnn_sweep
+project: sweep_rotrnn
+entity: baesian-learning
+method: grid
+metric:
+  name: Best Val Accuracy
+  goal: maximize
+parameters:
+  nheads:
+    values: [16, 32]
+  lr_factor:
+    values: [4.5, 2, 1]
+  r_min:
+    values: [0.5, 0.9, 0.99]
+  r_max:
+    values: [0.999, 0.9999, 0.99999]
+  max_phase:
+    values: [0.0314, 0.314, 6.28]  # pi/100, pi/10, 2pi
+  ssm_type:
+    value: "rotblock" # "lru"
+
+command:
+- pdm
+- run
+- python
+- "-u"
+- "-m"
+- ${program}
+- "--C_init"
+- "trunc_standard_normal"
+- "--batchnorm"
+- "True"
+- "--bidirectional"
+- "True"
+- "--blocks"
+- "8"
+- "bn_momentum"
+- "0.9"
+- "--bsz"
+- "64"
+- "--d_model"
+- "192"
+- "--dataset"
+- "pathfinder-classification"
+- "--epochs"
+- "200"
+- "--jax_seed"
+- "8180844"
+- "--n_layers"
+- "6"
+- "--opt_config"
+- "standard"
+- "--p_dropout"
+- "0.05"
+- "--ssm_lr_base"
+- "0.0009"
+- "--ssm_size_base"
+- "256"
+- "--warmup_end"
+- "1"
+- "--weight_decay"
+- "0.03"
+- "--USE_WANDB"
+- "True"
+- ${args}
+- "--wandb_project"
+- "s5_lra_sweeps"
+- "--wandb_entity"
+- "baesian-learning"
