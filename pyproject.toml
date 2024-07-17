@@ -6,10 +6,10 @@ authors = [
     {name = "raresdolga", email = "rares.dolga.16@ucl.ac.uk"},
 ]
 dependencies = [
-    "torch==2.0.1",
-    "torchaudio==2.0.2",
-    "torchtext==0.15.2",
-    "torchvision==0.15.2",
+    "torch>=2.0.0,!=2.0.1,!=2.1.0",
+    "torchaudio>=2.0.2",
+    "torchtext>=0.15.2",
+    "torchvision>=0.15.2",
     "einops>=0.8.0",
     "huggingface>=0.0.1",
     "matplotlib>=3.9.1",
