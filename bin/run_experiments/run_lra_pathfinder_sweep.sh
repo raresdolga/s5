@@ -10,4 +10,4 @@ export WANDB_SERVICE_WAIT=300
 export WANDB_MODE="online"
 export XLA_PYTHON_CLIENT_MEM_FRACTION=100
 
-singularity run --nv img.sif pdm run wandb agent baesian-learning/sweep_rotrnn/792af51x
+singularity run --nv img.sif pdm run wandb agent baesian-learning/sweep_rotrnn/zzmvekcu
