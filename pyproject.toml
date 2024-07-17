@@ -16,12 +16,21 @@ dependencies = [
     "flax>=0.8.5",
     "wandb>=0.17.4",
     "numpy==1.26.0",
-    "jax[cuda12]==0.4.30",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.optional-dependencies]
+cpu = ["jax[cpu]>=0.4.16"]
+cuda = ["jax[cuda12]>=0.4.30"]
+tpu = ["jax[tpu]"]
 
 [tool.pdm]
 distribution = false
+
+[[tool.pdm.source]]
+name = "jax_tpu"
+url = "https://storage.googleapis.com/jax-releases/libtpu_releases.html"
+verify_ssl = true
+type = "find_links"
