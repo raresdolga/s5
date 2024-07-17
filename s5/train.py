@@ -96,6 +96,7 @@ def train(args):
 
     if args.ssm_type == "s5":
         print("Layer type: s5")
+        print("ssm_size: ", ssm_size, "bidirectional: ", args.bidirectional)
         ssm_init_fn = init_S5SSM(H=args.d_model,
                                  P=ssm_size,
                                  Lambda_re_init=Lambda.real,
@@ -108,7 +109,7 @@ def train(args):
                                  dt_max=args.dt_max,
                                  conj_sym=args.conj_sym,
                                  clip_eigs=args.clip_eigs,
-                                 bidirectional=True)#args.bidirectional)
+                                 bidirectional=args.bidirectional)
     elif args.ssm_type == "lru":  
         # from s5.rares_layers import LRU
         # ssm_init_fn = partial(LRU, lru_dim=ssm_size, hidden_dim=args.d_model,r_min= 0.99,r_max= 0.999, max_phase=2*jnp.pi, bidirectional=False)
@@ -117,7 +118,7 @@ def train(args):
         ssm_init_fn = partial(LRU2, N=args.ssm_size_base, H=args.d_model,r_min= args.r_min,r_max= args.r_max, max_phase=args.max_phase, bidirectional=False)
     elif args.ssm_type == "rotblock":
         from s5.rares_layers import GammaDecayBlockDiagEfficient
-        ssm_init_fn = partial(GammaDecayBlockDiagEfficient,lru_dim=args.ssm_size_base, hidden_dim=args.d_model, r_min=args.r_min, r_max=args.r_max, max_phase=args.max_phase, bidirectional=False)
+        ssm_init_fn = partial(GammaDecayBlockDiagEfficient,lru_dim=args.ssm_size_base, hidden_dim=args.d_model, r_min=args.r_min, r_max=args.r_max, max_phase=args.max_phase, nheads=args.nheads, bidirectional=False)
     else:
         raise ValueError("Unexpected ssm type")
     if retrieval:

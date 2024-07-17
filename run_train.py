@@ -99,6 +99,7 @@ if __name__ == "__main__":
 						help="seed randomness")
 	
 	parser.add_argument("--ssm_type", type=str, default="s5")
+	parser.add_argument("--nheads", type=int, default=64)
 	parser.add_argument("--max_phase", type=float, default=0.314)
 	parser.add_argument("--r_max", type=float, default=0.99)
 	parser.add_argument("--r_min", type=float, default=0.999)
