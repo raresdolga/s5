@@ -35,8 +35,6 @@ command:
 - "True"
 - "--blocks"
 - "8"
-- "bn_momentum"
-- "0.9"
 - "--bsz"
 - "64"
 - "--d_model"
