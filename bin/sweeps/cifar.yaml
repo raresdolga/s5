@@ -1,5 +1,5 @@
 program: run_train
-name: cifar_rotrnn_sweep
+name: cifar_rotrnn_sweep_v2
 project: ssmrot_lra_sweeps
 entity: baesian-learning
 method: grid
@@ -10,13 +10,15 @@ parameters:
   # nheads:
   #   values: [16, 32, 64]
   lr_factor:
-    values: [4.5, 2, 1]
+    values: [4.5, 4, 2]
   r_min:
     values: [0.5, 0.9, 0.99]
   r_max:
     values: [0.999, 0.9999, 0.99999]
   max_phase:
-    values: [0.0314, 0.314, 6.28]  # pi/100, pi/10, 2pi
+    values: [0.314, 6.28]  # pi/10, 2pi
+  opt_config:
+    values: ['BfastandCdecay','noBCdecay']
   ssm_type:
     value: "rotblock" # "lru"
 
@@ -32,7 +34,7 @@ command:
 - "--batchnorm"
 - "True"
 - "--bidirectional"
-- "False"
+- "True"
 - "--blocks"
 - "3"
 - "--bsz"
@@ -49,8 +51,6 @@ command:
 - "16416"
 - "--n_layers"
 - "6"
-- "--opt_config"
-- "BfastandCdecay"
 - "--p_dropout"
 - "0.1"
 - "--ssm_lr_base"
@@ -60,7 +60,7 @@ command:
 - "--warmup_end"
 - "1"
 - "--weight_decay"
-- "0.07"
+- "0.05"
 - "--USE_WANDB"
 - "True"
 - ${args}

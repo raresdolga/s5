@@ -10,7 +10,7 @@ export WANDB_SERVICE_WAIT=300
 export WANDB_MODE="online"
 export XLA_PYTHON_CLIENT_MEM_FRACTION=100
 
-SINGULARITYENV_CUDA_VISIBLE_DEVICES=3 singularity run --nv S5.sif pdm run wandb agent --count 1  baesian-learning/sweep_rotrnn/lqbmrce5
+SINGULARITYENV_CUDA_VISIBLE_DEVICES=7 singularity run --nv S5.sif pdm run wandb agent --count 1  baesian-learning/sweep_rotrnn/42qp4xik
 
 # XLA_PYTHON_CLIENT_MEM_FRACTION=100 CUDA_VISIBLE_DEVICES="0" pdm run python run_train.py --C_init=lecun_normal --batchnorm=True --bidirectional=False \
 #                     --blocks=3 --bsz=50 --clip_eigs=True --d_model=512 --dataset=lra-cifar-classification \
