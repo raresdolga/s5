@@ -94,6 +94,7 @@ def train(args):
     print("V.shape={}".format(V.shape))
     print("Vinv.shape={}".format(Vinv.shape))
 
+    print("Len train loader: ", len(trainloader))
     if args.ssm_type == "s5":
         print("Layer type: s5")
         print("ssm_size: ", ssm_size, "bidirectional: ", args.bidirectional)

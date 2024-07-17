@@ -100,7 +100,7 @@ if __name__ == "__main__":
 	
 	parser.add_argument("--ssm_type", type=str, default="s5")
 	parser.add_argument("--nheads", type=int, default=64)
-	parser.add_argument("--max_phase", type=float, default=0.314)
-	parser.add_argument("--r_max", type=float, default=0.99)
+	parser.add_argument("--max_phase", type=float, default=6.28)#0.314) # 2pi, pi/10
+	parser.add_argument("--r_max", type=float, default=0.9)
 	parser.add_argument("--r_min", type=float, default=0.999)
 	train(parser.parse_args())
