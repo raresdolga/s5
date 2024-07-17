@@ -33,7 +33,8 @@ From: tensorflow/tensorflow:latest-gpu
         python3.10-venv \
         python3.10-distutils \
         python3-testresources \
-        swig
+        swig \
+        google-perftools
     apt-get clean
 
     # Link python3.10 to python and python3
