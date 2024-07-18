@@ -17,6 +17,8 @@ parameters:
     values: [0.999, 0.9999, 0.99999]
   max_phase:
     values: [0.0314, 0.314, 6.28]  # pi/100, pi/10, 2pi
+  opt_config:
+    value: ['standard', 'BfastandCdecay']
   ssm_type:
     value: "rotblock" # "lru"
 
@@ -47,8 +49,6 @@ command:
 - "8180844"
 - "--n_layers"
 - "6"
-- "--opt_config"
-- "standard"
 - "--p_dropout"
 - "0.05"
 - "--ssm_lr_base"

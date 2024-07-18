@@ -34,7 +34,8 @@ From: tensorflow/tensorflow:latest-gpu
         python3.10-distutils \
         python3-testresources \
         swig \
-        google-perftools
+        google-perftools \
+        pv
     apt-get clean
 
     # Link python3.10 to python and python3
@@ -55,7 +56,7 @@ From: tensorflow/tensorflow:latest-gpu
     pip install wandb
     
     # echo $PWD
-    # cd /home/rares/S5
+    # cd ~/s5
     # echo $PWD
     # pdm install
 
