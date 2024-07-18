@@ -119,7 +119,7 @@ def train(args):
         ssm_init_fn = partial(LRU2, N=args.ssm_size_base, H=args.d_model,r_min= args.r_min,r_max= args.r_max, max_phase=args.max_phase, bidirectional=False)
     elif args.ssm_type == "rotblock":
         from s5.rares_layers import GammaDecayBlockDiagEfficient
-        ssm_init_fn = partial(GammaDecayBlockDiagEfficient,lru_dim=args.ssm_size_base, hidden_dim=args.d_model, r_min=args.r_min, r_max=args.r_max, max_phase=args.max_phase, nheads=args.nheads, bidirectional=False)
+        ssm_init_fn = partial(GammaDecayBlockDiagEfficient,lru_dim=args.ssm_size_base, hidden_dim=args.d_model, r_min=args.r_min, r_max=args.r_max, max_phase=args.max_phase, nheads=args.nheads, bidirectional=args.bidirectional)
     else:
         raise ValueError("Unexpected ssm type")
     if retrieval:
