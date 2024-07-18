@@ -116,6 +116,7 @@ singularity build S5.sif ./bin/singularity/img.def.def
 
 # create a sweep id
 wandb sweep --project sweep_rotrnn ./bin/wandb/cifar.yaml
+pdm run wandb sweep --project sweep_rotrnn ./bin/sweeps/cifar.yaml
 # cancel sweeps
 wandb sweep --cancel baesian-learning/sweep_rotrnn/zd89hg0q
 
