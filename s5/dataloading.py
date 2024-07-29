@@ -155,7 +155,7 @@ def create_lra_pathx_classification_dataset(cache_dir: Union[str, Path] = DEFAUL
 	from s5.dataloaders.lra import PathFinder
 	name = 'pathfinder'
 	resolution = 128
-	dir_name = f'./raw_datasets/lra_release/lra_release/pathfinder{resolution}'
+	dir_name = f'./data/raw_datasets/lra_release/lra_release/pathfinder{resolution}'
 
 	dataset_obj = PathFinder(name, data_dir=dir_name, resolution=resolution)
 	dataset_obj.cache_dir = Path(cache_dir) / name

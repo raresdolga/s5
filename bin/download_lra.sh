@@ -1,3 +1,4 @@
+cd /home/rares/s5/data
 mkdir raw_datasets
 
 # Clone and unpack the LRA object.

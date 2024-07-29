@@ -1,9 +1,9 @@
 [project]
-name = "S5"
+name = "s5"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
-    {name = "raresdolga", email = "rares.dolga.16@ucl.ac.uk"},
+    {name = "", email = ""},
 ]
 dependencies = [
     "torch==2.0.1",
@@ -17,6 +17,7 @@ dependencies = [
     "wandb>=0.17.4",
     "numpy==1.26.0",
     "jax[cuda12]==0.4.30",
+    "datasets>=2.20.0",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"
