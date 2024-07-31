@@ -1,36 +1,28 @@
 [project]
-name = "S5"
+name = "s5"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
-    {name = "raresdolga", email = "rares.dolga.16@ucl.ac.uk"},
+    {name = "", email = ""},
 ]
 dependencies = [
-    "torch>=2.0.0,!=2.0.1,!=2.1.0",
-    "torchaudio>=2.0.2",
-    "torchtext>=0.15.2",
-    "torchvision>=0.15.2",
+    "torch==2.0.1",
+    "torchaudio==2.0.2",
+    "torchtext==0.15.2",
+    "torchvision==0.15.2",
     "einops>=0.8.0",
     "huggingface>=0.0.1",
     "matplotlib>=3.9.1",
     "flax>=0.8.5",
     "wandb>=0.17.4",
     "numpy==1.26.0",
+    "jax[cuda12]==0.4.30",
+    "datasets>=2.20.0",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"
 license = {text = "MIT"}
 
-[project.optional-dependencies]
-cpu = ["jax[cpu]>=0.4.16"]
-cuda = ["jax[cuda12]>=0.4.30"]
-tpu = ["jax[tpu]"]
 
 [tool.pdm]
 distribution = false
-
-[[tool.pdm.source]]
-name = "jax_tpu"
-url = "https://storage.googleapis.com/jax-releases/libtpu_releases.html"
-verify_ssl = true
-type = "find_links"

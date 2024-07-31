@@ -112,11 +112,11 @@ def train(args):
                                  clip_eigs=args.clip_eigs,
                                  bidirectional=args.bidirectional)
     elif args.ssm_type == "lru":  
-        # from s5.rares_layers import LRU
-        # ssm_init_fn = partial(LRU, lru_dim=ssm_size, hidden_dim=args.d_model,r_min= 0.99,r_max= 0.999, max_phase=2*jnp.pi, bidirectional=False)
-        from s5.rares_layers import LRU2
-        print("LRU ssm type")
-        ssm_init_fn = partial(LRU2, N=args.ssm_size_base, H=args.d_model,r_min= args.r_min,r_max= args.r_max, max_phase=args.max_phase, bidirectional=False)
+        from s5.rares_layers import LRU
+        ssm_init_fn = partial(LRU, lru_dim=ssm_size, hidden_dim=args.d_model,r_min= args.r_min,r_max= args.r_max, max_phase=args.max_phase, bidirectional=args.bidirectional)
+        #from s5.rares_layers import LRU2
+        #print("LRU ssm type")
+        #sm_init_fn = partial(LRU2, N=args.ssm_size_base, H=args.d_model,r_min= args.r_min,r_max= args.r_max, max_phase=args.max_phase, bidirectional=False)
     elif args.ssm_type == "rotblock":
         from s5.rares_layers import GammaDecayBlockDiagEfficient
         ssm_init_fn = partial(GammaDecayBlockDiagEfficient,lru_dim=args.ssm_size_base, hidden_dim=args.d_model, r_min=args.r_min, r_max=args.r_max, max_phase=args.max_phase, nheads=args.nheads, bidirectional=args.bidirectional)
