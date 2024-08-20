@@ -8,57 +8,67 @@ metric:
   goal: maximize
 parameters:
   nheads:
-    values: [16, 32]
+    values: [32, 64]
   lr_factor:
-    values: [4.5, 2, 1]
+    value: 3
   r_min:
-    values: [0.5, 0.9, 0.99]
+    values: [0.9, 0.99]
   r_max:
-    values: [0.999, 0.9999, 0.99999]
+    values: [0.999, 0.9999]
   max_phase:
-    values: [0.0314, 0.314, 6.28]  # pi/100, pi/10, 2pi
+    values: [0.314, 6.28]  # pi/100, pi/10, 2pi
   opt_config:
-    value: ['standard', 'BfastandCdecay']
+    value: 'BfastandCdecay'
   ssm_type:
     value: "rotblock" # "lru"
+  ssm_lr_base:
+    value: 0.0001
 
 command:
 - pdm
 - run
+- "-p"
+- "/cluster/project7/biegunk_phd/s5"
 - python
 - "-u"
 - "-m"
 - ${program}
 - "--C_init"
-- "trunc_standard_normal"
+- "complex_normal"
 - "--batchnorm"
 - "True"
 - "--bidirectional"
 - "True"
 - "--blocks"
-- "8"
+- "16"
 - "--bsz"
-- "64"
+- "32"
+- "--bn_momentum"
+- "0.9"
 - "--d_model"
-- "192"
+- "128"
 - "--dataset"
 - "pathfinder-classification"
 - "--epochs"
-- "200"
+- "75"
 - "--jax_seed"
-- "8180844"
+- "6429262"
 - "--n_layers"
 - "6"
 - "--p_dropout"
-- "0.05"
-- "--ssm_lr_base"
-- "0.0009"
+- "0.0"
 - "--ssm_size_base"
 - "256"
 - "--warmup_end"
 - "1"
 - "--weight_decay"
-- "0.03"
+- "0.05"
+- "--activation_fn"
+- "half_glu1"
+- "--conj_sym"
+- "False"
+- "--dt_min"
+- "0.0001"
 - "--USE_WANDB"
 - "True"
 - ${args}

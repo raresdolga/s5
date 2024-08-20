@@ -1,17 +1,19 @@
 from functools import partial
-from jax import random
+
 import jax.numpy as np
+from jax import random
 from jax.scipy.linalg import block_diag
+
 import wandb
 
-from .train_helpers import create_train_state, reduce_lr_on_plateau,\
-    linear_warmup, cosine_annealing, constant_lr, train_epoch, validate
 from .dataloading import Datasets
 from .seq_model import BatchClassificationModel, RetrievalModel
 from .ssm import init_S5SSM
 from .ssm_init import make_DPLR_HiPPO
+from .train_helpers import (constant_lr, cosine_annealing, create_train_state,
+                            linear_warmup, reduce_lr_on_plateau, train_epoch,
+                            validate)
 
-from jax import numpy as jnp
 
 def train(args):
     """
@@ -35,7 +37,8 @@ def train(args):
     wandb.log({"block_size": block_size})
 
     # Set global learning rate lr (e.g. encoders, etc.) as function of ssm_lr
-    lr = args.lr_factor * ssm_lr
+    # lr = args.lr_factor * ssm_lr
+    lr = args.global_lr
 
     # Set randomness...
     print("[*] Setting Randomness...")
@@ -345,6 +348,15 @@ def train(args):
                     "lr": state.opt_state.inner_states['regular'].inner_state.hyperparams['learning_rate'],
                     "ssm_lr": state.opt_state.inner_states['ssm'].inner_state.hyperparams['learning_rate']
                 }
+            )
+        wandb.run.summary["Best Val Loss"] = best_loss
+        wandb.run.summary["Best Val Accuracy"] = best_acc
+        wandb.run.summary["Best Epoch"] = best_epoch
+        wandb.run.summary["Best Test Loss"] = best_test_loss
+        wandb.run.summary["Best Test Accuracy"] = best_test_acc
+
+        if count > args.early_stop_patience:
+            break
             )
         wandb.run.summary["Best Val Loss"] = best_loss
         wandb.run.summary["Best Val Accuracy"] = best_acc
