@@ -38,7 +38,7 @@ def train(args):
 
     # Set global learning rate lr (e.g. encoders, etc.) as function of ssm_lr
     # lr = args.lr_factor * ssm_lr
-    lr = args.global_lr
+    lr = args.global_lr if args.global_lr is not None else args.lr_factor * ssm_lr
 
     # Set randomness...
     print("[*] Setting Randomness...")

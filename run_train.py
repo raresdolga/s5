@@ -142,7 +142,7 @@ if __name__ == "__main__":
         help="global learning rate = lr_factor*ssm_lr_base",
     )
     parser.add_argument(
-        "--global_lr", type=float, default=0.001, help="global learning rate"
+        "--global_lr", type=float, required=False, help="global learning rate"
     )
     parser.add_argument(
         "--dt_global",
