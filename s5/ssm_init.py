@@ -55,6 +55,8 @@ def make_DPLR_HiPPO(N):
     """
     A, P, B = make_NPLR_HiPPO(N)
 
+    A += 0.1 * random.normal(random.key(0), A.shape)
+
     S = A + P[:, np.newaxis] * P[np.newaxis, :]
 
     S_diag = np.diagonal(S)
@@ -62,9 +64,6 @@ def make_DPLR_HiPPO(N):
 
     # Diagonalize S to V \Lambda V^*
     Lambda_imag, V = eigh(S * -1j)
-
-    Lambda_real += 0.1 * random.normal(random.key(0), Lambda_real.shape)
-    Lambda_imag += 0.1 * random.normal(random.key(1), Lambda_imag.shape)
 
     P = V.conj().T @ P
     B_orig = B
