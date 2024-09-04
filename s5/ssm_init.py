@@ -63,13 +63,14 @@ def make_DPLR_HiPPO(N):
     # Diagonalize S to V \Lambda V^*
     Lambda_imag, V = eigh(S * -1j)
 
+    Lambda_real += 0.1 * random.normal(random.key(0), Lambda_real.shape)
+    Lambda_imag += 0.1 * random.normal(random.key(1), Lambda_imag.shape)
+
     P = V.conj().T @ P
     B_orig = B
     B = V.conj().T @ B
     return (
-        Lambda_real
-        + 1j * Lambda_imag
-        + 0.001 * random.normal(random.key(0), Lambda_real.shape),
+        Lambda_real + 1j * Lambda_imag,
         P,
         B,
         V,
