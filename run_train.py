@@ -197,4 +197,3 @@ if __name__ == "__main__":
     parser.add_argument("--r_max", type=float, default=0.9)
     parser.add_argument("--r_min", type=float, default=0.999)
     train(parser.parse_args())
-    train(parser.parse_args())
