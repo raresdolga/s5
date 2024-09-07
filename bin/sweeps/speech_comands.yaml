@@ -1,5 +1,5 @@
 program: run_train
-name: pathfinder_rotrnn_sweep
+name: sc_rotrnn_sweep
 project: sweep_rotrnn
 entity: baesian-learning
 method: grid
@@ -9,14 +9,12 @@ metric:
 parameters:
   nheads:
     value: 32
-  lr_factor:
-    value: 4.5
   r_min:
-    values: [0.5, 0.1, 0.01]
+    values: [0.9, 0.5, 0.1]
   r_max:
-    value: 0.9999
+    values: [0.999, 0.9999]
   max_phase:
-    value: 0.31
+    values: [0.314, 0.628]
   opt_config:
     value: 'noBCdecay'
   ssm_type:
@@ -24,9 +22,9 @@ parameters:
   ssm_lr_base:
     value: 0.001
   weight_decay:
-    values: [0.03, 0.01, 0.05]
+    value: 0.04
   p_dropout:
-    values: [0.03, 0.01, 0.05]
+    value: 0.1
 
 command:
 - pdm
@@ -37,30 +35,30 @@ command:
 - "-u"
 - "-m"
 - ${program}
-- "--C_init"
-- "trunc_standard_normal"
 - "--batchnorm"
 - "True"
 - "--bidirectional"
 - "True"
 - "--blocks"
-- "8"
+- "16"
 - "--bsz"
-- "64"
+- "16"
 - "--clip_eigs"
 - "True"
 - "--d_model"
-- "192"
+- "96"
 - "--dataset"
-- "pathfinder-classification"
+- "speech35-classification"
 - "--epochs"
-- "200"
+- "40"
 - "--jax_seed"
-- "8180844"
+- "4062966"
 - "--n_layers"
 - "6"
 - "--ssm_size_base"
-- "256"
+- "128"
+- "--global_lr"
+- "0.008"
 - "--warmup_end"
 - "1"
 - "--conj_sym"
