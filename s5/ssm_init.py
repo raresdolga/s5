@@ -55,8 +55,6 @@ def make_DPLR_HiPPO(N):
     """
     A, P, B = make_NPLR_HiPPO(N)
 
-    A += 0.1 * random.normal(random.key(0), A.shape)
-
     S = A + P[:, np.newaxis] * P[np.newaxis, :]
 
     S_diag = np.diagonal(S)
