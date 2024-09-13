@@ -1,5 +1,5 @@
 program: run_train
-name: sc_rotrnn_sweep
+name: sc_rotrnn_no_rot_sweep
 project: sweep_rotrnn
 entity: baesian-learning
 method: grid
