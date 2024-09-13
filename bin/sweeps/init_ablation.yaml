@@ -1,32 +1,30 @@
 program: run_train
-name: pathfinder_rotrnn_sweep
-project: sweep_rotrnn
+name: initilisation_ablation_sweep
+project: rotrnn_ablations
 entity: baesian-learning
 method: grid
 metric:
   name: Best Val Accuracy
   goal: maximize
 parameters:
-  nheads:
-    value: 32
-  lr_factor:
-    value: 4.5
+  gloabl_lr:
+    values: 0.003
   r_min:
-    values: [0.5, 0.1, 0.01]
+    value: 0.5
   r_max:
-    value: 0.9999
+    value: 0.999
   max_phase:
     value: 0.31
   opt_config:
-    value: 'noBCdecay'
+    value: 'BfastandCdecay'
   ssm_type:
     value: "rotblock" 
   ssm_lr_base:
     value: 0.001
   weight_decay:
-    values: [0.03, 0.01, 0.05]
+    value: 0.04
   p_dropout:
-    values: [0.03, 0.01, 0.05]
+    value: 0.0
 
 command:
 - pdm
@@ -38,25 +36,27 @@ command:
 - "-m"
 - ${program}
 - "--C_init"
-- "trunc_standard_normal"
+- "lecun_normal"
 - "--batchnorm"
 - "True"
+- "--activation_fn"
+- "half_glu2"
 - "--bidirectional"
 - "True"
 - "--blocks"
 - "8"
 - "--bsz"
-- "64"
+- "50"
 - "--clip_eigs"
 - "True"
 - "--d_model"
-- "192"
+- "128"
 - "--dataset"
-- "pathfinder-classification"
+- "listops-classification"
 - "--epochs"
-- "200"
+- "40"
 - "--jax_seed"
-- "8180844"
+- "6554595"
 - "--n_layers"
 - "6"
 - "--ssm_size_base"
@@ -69,6 +69,6 @@ command:
 - "True"
 - ${args}
 - "--wandb_project"
-- "s5_lra_sweeps"
+- "rotrnn_ablations"
 - "--wandb_entity"
 - "baesian-learning"
