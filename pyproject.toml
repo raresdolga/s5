@@ -1,9 +1,9 @@
 [project]
-name = "S5"
+name = "s5"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
-    {name = "raresdolga", email = "rares.dolga.16@ucl.ac.uk"},
+    {name = "", email = ""},
 ]
 dependencies = [
     "torch==2.0.1",
@@ -12,12 +12,16 @@ dependencies = [
     "torchvision==0.15.2",
     "einops>=0.8.0",
     "huggingface>=0.0.1",
-    "matplotlib>=3.9.1",
+    "matplotlib>=3.9.2",
     "flax>=0.8.5",
     "wandb>=0.17.4",
     "numpy==1.26.0",
-    "jax[cpu]==0.4.30",
     "datasets>=2.20.0",
+    "tensorflow-datasets>=4.9.6",
+    "tensorflow>=2.17.0",
+    "pydub>=0.25.1",
+    "jax[cpu]>=0.4.31",
+    "scikit-learn>=1.5.1",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"
