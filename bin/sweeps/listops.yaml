@@ -10,23 +10,25 @@ parameters:
   nheads:
     value: 32
   global_lr:
-    values: [0.001, 0.003, 0.005]
+    values: [0.0008, 0.001, 0.0012]
   ssm_lr_base:
-    value: 0.001
+    values: [0.0005, 0.001]
   r_min:
-    values: [0.1, 0.5, 0.9]
+    values: [0.1, 0.5]
   r_max:
-    values: [0.999, 0.9999]
+    value: 0.9999
   max_phase:
-    values: [6.28, 0.314]
+    value: 6.28
   p_dropout:
-    values: [0.0, 0.05, 0.1]
+    values: [0.0, 0.03]
   weight_decay:
-    value: 0.04
+    values: [0.03, 0.05]
   opt_config:
     value: 'BfastandCdecay'
   ssm_type:
     value: "rotblock"
+  ssm_size_base:
+    values: [64, 128]
 
 command:
 - pdm
@@ -61,8 +63,6 @@ command:
 - "6554595"
 - "--n_layers"
 - "8"
-- "--ssm_size_base"
-- "128"
 - "--warmup_end"
 - "1"
 - "--USE_WANDB"
