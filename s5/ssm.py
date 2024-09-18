@@ -82,11 +82,10 @@ def apply_ssm(Lambda_bar, B_bar, C_tilde, input_sequence, conj_sym, bidirectiona
             binary_operator, (Lambda_elements, Bu_elements), reverse=True
         )
         xs = np.concatenate((xs, xs2), axis=-1)
-    return xs
     if conj_sym:
-        return jax.vmap(lambda x: 2 * (C_tilde @ x).real)(xs)
+        return jax.vmap(lambda x: 2 * (C_tilde @ x).real)(xs), xs
     else:
-        return jax.vmap(lambda x: (C_tilde @ x).real)(xs)
+        return jax.vmap(lambda x: (C_tilde @ x).real)(xs), xs
 
 
 class S5SSM(nn.Module):

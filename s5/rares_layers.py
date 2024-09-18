@@ -122,11 +122,9 @@ class LRU(nn.Module):
                 [inner_states, backward], axis=-1
             )  # BLN -> BL2N
 
-        return inner_states.real
-
         y = jnp.einsum("HN,LN->LH", C, inner_states).real + jnp.einsum("H,LH->LH", D, x)
         # y = jax.vmap(lambda x, u: (x@C.T).real + D * u)(inner_states, x).transpose(1,0,2) # LBH -> BLH
-        return y
+        return y, inner_states
 
 
 class LRU2(nn.Module):
@@ -351,6 +349,7 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         P = jax.scipy.linalg.expm(P - P.transpose(0, 2, 1))
         # apply P.T to Bx_t
         Us = jnp.einsum("HnD,BTD->HTBn", B_norm, x)
+        # Us.at[:, 0].set(Us[:, 0] / jnp.linalg.norm(Us[:, 0], axis=-1, keepdims=True))
         Us = jnp.einsum("HnN,HTBn->HTBN", P.transpose(0, 2, 1), Us)
         # mix per head
         mix_head_fn = jax.vmap(self.mix_sequence, in_axes=(0, 0, 0, None), out_axes=0)
@@ -368,7 +367,6 @@ class GammaDecayBlockDiagEfficient(nn.Module):
             C = jnp.concatenate([C, C2], axis=-1)
 
         y = y.transpose(2, 1, 0, 3)  # H T B N -> B T H N
-        return y[0]
-        y = jnp.einsum("Dn,BTn->BTD", C, y.reshape(batch_sz, T, -1)) + D * x
+        output = jnp.einsum("Dn,BTn->BTD", C, y.reshape(batch_sz, T, -1)) + D * x
         # squeeze batch dimension
-        return y[0]
+        return output[0], y[0]

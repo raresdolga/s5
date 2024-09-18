@@ -23,7 +23,7 @@ key = jr.PRNGKey(0)
 
 # toy_inputs = jr.normal(input_key, (T, input_size)) * 10
 
-n_seqs = 1
+n_seqs = 3
 
 model_types = ["rotssm", "lru", "s5"]
 
@@ -89,9 +89,9 @@ for n in range(n_seqs):
 
         params = model.init({"params": model_key}, toy_inputs)
 
-        outputs = model.apply(params, toy_inputs)
+        y, outputs = model.apply(params, toy_inputs)
 
-        if model_type == "s5":
+        if model_type == "s5" or model_type == "lru":
             output_norm = jnp.sqrt(
                 jnp.einsum("...i,...i->...", outputs.real, outputs.real)
                 + jnp.einsum("...i,...i->...", outputs.imag, outputs.imag)
