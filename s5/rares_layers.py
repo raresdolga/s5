@@ -325,7 +325,7 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         thetas = self.param(
             "theta_log", self.theta_init, self.lru_dim // 2, self.max_phase
         ).reshape(H, N // 2)
-        P = self.param("P", self.ortho_mat_init, self.lru_dim, N).reshape(H, N, N)
+        # P = self.param("P", self.ortho_mat_init, self.lru_dim, N).reshape(H, N, N)
         B = self.param("B", self.mat_init, self.lru_dim, self.hidden_dim).reshape(
             H, N, self.hidden_dim
         )
@@ -349,19 +349,19 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         B_norm = jnp.einsum("H,HnD->HnD", norm, B)
         # apply P.T to Bx_t
         Us = jnp.einsum("HnD,BTD->HTBn", B_norm, x)
-        Us = jnp.einsum("HnN,HTBn->HTBN", P.transpose(0, 2, 1), Us)
+        # Us = jnp.einsum("HnN,HTBn->HTBN", P.transpose(0, 2, 1), Us)
         # mix per head
         mix_head_fn = jax.vmap(self.mix_sequence, in_axes=(0, 0, 0, None), out_axes=0)
         thetas = jnp.exp(thetas)
 
         y = mix_head_fn(gamma, thetas, Us, False)  # H T B N
         # multiply P back to \tilde{x}_t
-        y = jnp.einsum("HNn,HTBN->HTBn", P, y)
+        # y = jnp.einsum("HNn,HTBN->HTBn", P, y)
 
         if self.bidirectional:
             backward = mix_head_fn(gamma, thetas, Us, True)  # H T B N
             # multiply P back to \tilde{x}_t
-            backward = jnp.einsum("HNn,HTBN->HTBn", P, backward)
+            # backward = jnp.einsum("HNn,HTBN->HTBn", P, backward)
             y = jnp.concatenate([y, backward], axis=-1)
             C = jnp.concatenate([C, C2], axis=-1)
 
