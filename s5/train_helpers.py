@@ -1,11 +1,12 @@
 from functools import partial
+from typing import Any, Tuple
+
 import jax
 import jax.numpy as np
+import optax
+from flax.training import train_state
 from jax.nn import one_hot
 from tqdm import tqdm
-from flax.training import train_state
-import optax
-from typing import Any, Tuple
 
 
 # LR schedulers
@@ -42,7 +43,7 @@ def reduce_lr_on_plateau(input, factor=0.2, patience=20, lr_min=1e-6):
     return lr, ssm_lr, count, opt_acc
 
 
-def constant_lr(step, base_lr, end_step,  lr_min=None):
+def constant_lr(step, base_lr, end_step, lr_min=None):
     return base_lr
 
 
@@ -55,12 +56,18 @@ def update_learning_rate_per_step(lr_params, state):
     step += 1
 
     # Update state
-    state.opt_state.inner_states['regular'].inner_state.hyperparams['learning_rate'] = np.array(lr_val, dtype=np.float32)
-    state.opt_state.inner_states['ssm'].inner_state.hyperparams['learning_rate'] = np.array(ssm_lr_val, dtype=np.float32)
+    state.opt_state.inner_states["regular"].inner_state.hyperparams["learning_rate"] = (
+        np.array(lr_val, dtype=np.float32)
+    )
+    state.opt_state.inner_states["ssm"].inner_state.hyperparams["learning_rate"] = (
+        np.array(ssm_lr_val, dtype=np.float32)
+    )
     if opt_config in ["BandCdecay"]:
         # In this case we are applying the ssm learning rate to B, even though
         # we are also using weight decay on B
-        state.opt_state.inner_states['none'].inner_state.hyperparams['learning_rate'] = np.array(ssm_lr_val, dtype=np.float32)
+        state.opt_state.inner_states["none"].inner_state.hyperparams[
+            "learning_rate"
+        ] = np.array(ssm_lr_val, dtype=np.float32)
 
     return state, step
 
@@ -80,20 +87,21 @@ def map_nested_fn(fn):
     return map_fn
 
 
-def create_train_state(model_cls,
-                       rng,
-                       padded,
-                       retrieval,
-                       in_dim=1,
-                       bsz=128,
-                       seq_len=784,
-                       weight_decay=0.01,
-                       batchnorm=False,
-                       opt_config="standard",
-                       ssm_lr=1e-3,
-                       lr=1e-3,
-                       dt_global=False
-                       ):
+def create_train_state(
+    model_cls,
+    rng,
+    padded,
+    retrieval,
+    in_dim=1,
+    bsz=128,
+    seq_len=784,
+    weight_decay=0.01,
+    batchnorm=False,
+    opt_config="standard",
+    ssm_lr=1e-3,
+    lr=1e-3,
+    dt_global=False,
+):
     """
     Initializes the training state using optax
 
@@ -116,23 +124,39 @@ def create_train_state(model_cls,
     if padded:
         if retrieval:
             # For retrieval tasks we have two different sets of "documents"
-            dummy_input = (np.ones((2*bsz, seq_len, in_dim)), np.ones(2*bsz))
-            integration_timesteps = np.ones((2*bsz, seq_len,))
+            dummy_input = (np.ones((2 * bsz, seq_len, in_dim)), np.ones(2 * bsz))
+            integration_timesteps = np.ones(
+                (
+                    2 * bsz,
+                    seq_len,
+                )
+            )
         else:
             dummy_input = (np.ones((bsz, seq_len, in_dim)), np.ones(bsz))
-            integration_timesteps = np.ones((bsz, seq_len,))
+            integration_timesteps = np.ones(
+                (
+                    bsz,
+                    seq_len,
+                )
+            )
     else:
         dummy_input = np.ones((bsz, seq_len, in_dim))
-        integration_timesteps = np.ones((bsz, seq_len, ))
+        integration_timesteps = np.ones(
+            (
+                bsz,
+                seq_len,
+            )
+        )
 
     model = model_cls(training=True)
     init_rng, dropout_rng = jax.random.split(rng, num=2)
-    variables = model.init({"params": init_rng,
-                            "dropout": dropout_rng},
-                           dummy_input, integration_timesteps,
-                           )
+    variables = model.init(
+        {"params": init_rng, "dropout": dropout_rng},
+        dummy_input,
+        integration_timesteps,
+    )
     if batchnorm:
-        params = variables["params"]#.unfreeze()
+        params = variables["params"]  # .unfreeze()
         batch_stats = variables["batch_stats"]
     else:
         params = variables["params"].unfreeze()
@@ -146,26 +170,46 @@ def create_train_state(model_cls,
         if dt_global:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["B", "Lambda_re", "Lambda_im", "norm",
-                         "theta_log", "nu_log", "gamma_log", "B_re", "B_im"
-                         ]
+                if k
+                in [
+                    "B",
+                    "Lambda_re",
+                    "Lambda_im",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                    "B_re",
+                    "B_im",
+                ]
                 else ("none" if k in [] else "regular")
             )
 
         else:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["B", "Lambda_re", "Lambda_im", "log_step", "norm",
-                         "theta_log", "nu_log", "gamma_log", "B_re", "B_im"
-                        ]
+                if k
+                in [
+                    "B",
+                    "Lambda_re",
+                    "Lambda_im",
+                    "log_step",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                    "B_re",
+                    "B_im",
+                ]
                 else ("none" if k in [] else "regular")
             )
         tx = optax.multi_transform(
             {
                 "none": optax.inject_hyperparams(optax.sgd)(learning_rate=0.0),
                 "ssm": optax.inject_hyperparams(optax.adam)(learning_rate=ssm_lr),
-                "regular": optax.inject_hyperparams(optax.adamw)(learning_rate=lr,
-                                                                 weight_decay=weight_decay),
+                "regular": optax.inject_hyperparams(optax.adamw)(
+                    learning_rate=lr, weight_decay=weight_decay
+                ),
             },
             ssm_fn,
         )
@@ -177,25 +221,42 @@ def create_train_state(model_cls,
         if dt_global:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["Lambda_re", "Lambda_im", "norm",
-                         "theta_log", "nu_log", "gamma_log"]
+                if k
+                in [
+                    "Lambda_re",
+                    "Lambda_im",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                ]
                 else ("none" if k in ["B", "B_re", "B_im"] else "regular")
             )
 
         else:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["Lambda_re", "Lambda_im", "log_step", "norm",
-                         "theta_log", "nu_log", "gamma_log"]
+                if k
+                in [
+                    "Lambda_re",
+                    "Lambda_im",
+                    "log_step",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                ]
                 else ("none" if k in ["B", "B_re", "B_im"] else "regular")
             )
         tx = optax.multi_transform(
             {
-                "none": optax.inject_hyperparams(optax.adamw)(learning_rate=ssm_lr,
-                                                              weight_decay=weight_decay),
+                "none": optax.inject_hyperparams(optax.adamw)(
+                    learning_rate=ssm_lr, weight_decay=weight_decay
+                ),
                 "ssm": optax.inject_hyperparams(optax.adam)(learning_rate=ssm_lr),
-                "regular": optax.inject_hyperparams(optax.adamw)(learning_rate=lr,
-                                                                 weight_decay=weight_decay),
+                "regular": optax.inject_hyperparams(optax.adamw)(
+                    learning_rate=lr, weight_decay=weight_decay
+                ),
             },
             ssm_fn,
         )
@@ -208,23 +269,39 @@ def create_train_state(model_cls,
         if dt_global:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["Lambda_re", "Lambda_im", "norm",
-                         "theta_log", "nu_log", "gamma_log"]
+                if k
+                in [
+                    "Lambda_re",
+                    "Lambda_im",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                ]
                 else ("none" if k in [] else "regular")
             )
         else:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["Lambda_re", "Lambda_im", "log_step", "norm",
-                         "theta_log", "nu_log", "gamma_log"]
+                if k
+                in [
+                    "Lambda_re",
+                    "Lambda_im",
+                    "log_step",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                ]
                 else ("none" if k in [] else "regular")
             )
         tx = optax.multi_transform(
             {
                 "none": optax.inject_hyperparams(optax.adamw)(learning_rate=0.0),
                 "ssm": optax.inject_hyperparams(optax.adam)(learning_rate=ssm_lr),
-                "regular": optax.inject_hyperparams(optax.adamw)(learning_rate=lr,
-                                                                 weight_decay=weight_decay),
+                "regular": optax.inject_hyperparams(optax.adamw)(
+                    learning_rate=lr, weight_decay=weight_decay
+                ),
             },
             ssm_fn,
         )
@@ -237,37 +314,79 @@ def create_train_state(model_cls,
         if dt_global:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["B", "C", "C1", "C2", "D",
-                         "Lambda_re", "Lambda_im", "norm",
-                         "theta_log", "nu_log","gamma_log", "B_re", "B_im", "C_re", "C_im", "C_re2", "C_im2"]
+                if k
+                in [
+                    "B",
+                    "C",
+                    "C1",
+                    "C2",
+                    "D",
+                    "Lambda_re",
+                    "Lambda_im",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                    "B_re",
+                    "B_im",
+                    "C_re",
+                    "C_im",
+                    "C_re2",
+                    "C_im2",
+                ]
                 else ("none" if k in [] else "regular")
             )
         else:
             ssm_fn = map_nested_fn(
                 lambda k, _: "ssm"
-                if k in ["B", "C", "C1", "C2", "D",
-                         "Lambda_re", "Lambda_im", "log_step", "norm",
-                         "theta_log", "nu_log", "gamma_log", "B_re", "B_im", "C_re", "C_im", "C_re2", "C_im2"]
+                if k
+                in [
+                    "B",
+                    "C",
+                    "C1",
+                    "C2",
+                    "D",
+                    "Lambda_re",
+                    "Lambda_im",
+                    "log_step",
+                    "norm",
+                    "theta_log",
+                    "nu_log",
+                    "gamma_log",
+                    "B_re",
+                    "B_im",
+                    "C_re",
+                    "C_im",
+                    "C_re2",
+                    "C_im2",
+                ]
                 else ("none" if k in [] else "regular")
             )
         tx = optax.multi_transform(
             {
                 "none": optax.inject_hyperparams(optax.sgd)(learning_rate=0.0),
                 "ssm": optax.inject_hyperparams(optax.adam)(learning_rate=ssm_lr),
-                "regular": optax.inject_hyperparams(optax.adamw)(learning_rate=lr,
-                                                                 weight_decay=weight_decay),
+                "regular": optax.inject_hyperparams(optax.adamw)(
+                    learning_rate=lr, weight_decay=weight_decay
+                ),
             },
             ssm_fn,
         )
 
     fn_is_complex = lambda x: x.dtype in [np.complex64, np.complex128]
-    param_sizes = map_nested_fn(lambda k, param: param.size * (2 if fn_is_complex(param) else 1))(params)
+    param_sizes = map_nested_fn(
+        lambda k, param: param.size * (2 if fn_is_complex(param) else 1)
+    )(params)
     print(f"[*] Trainable Parameters: {sum(jax.tree_leaves(param_sizes))}")
 
     if batchnorm:
+
         class TrainState(train_state.TrainState):
             batch_stats: Any
-        return TrainState.create(apply_fn=model.apply, params=params, tx=tx, batch_stats=batch_stats)
+
+        return TrainState.create(
+            apply_fn=model.apply, params=params, tx=tx, batch_stats=batch_stats
+        )
     else:
         return train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
@@ -284,9 +403,9 @@ def compute_accuracy(logits, label):
     return np.argmax(logits) == label
 
 
-def prep_batch(batch: tuple,
-               seq_len: int,
-               in_dim: int) -> Tuple[np.ndarray, np.ndarray, np.array]:
+def prep_batch(
+    batch: tuple, seq_len: int, in_dim: int
+) -> Tuple[np.ndarray, np.ndarray, np.array]:
     """
     Take a batch and convert it to a standard x/y format.
     :param batch:       (x, y, aux_data) as returned from dataloader.
@@ -306,13 +425,15 @@ def prep_batch(batch: tuple,
     inputs = np.asarray(inputs.numpy())
 
     # Grab lengths from aux if it is there.
-    lengths = aux_data.get('lengths', None)
+    lengths = aux_data.get("lengths", None)
 
     # Make all batches have same sequence length
     num_pad = seq_len - inputs.shape[1]
     if num_pad > 0:
         # Assuming vocab padding value is zero
-        inputs = np.pad(inputs, ((0, 0), (0, num_pad)), 'constant', constant_values=(0,))
+        inputs = np.pad(
+            inputs, ((0, 0), (0, num_pad)), "constant", constant_values=(0,)
+        )
 
     # Inputs is either [n_batch, seq_len] or [n_batch, seq_len, in_dim].
     # If there are not three dimensions and trailing dimension is not equal to in_dim then
@@ -331,15 +452,17 @@ def prep_batch(batch: tuple,
     targets = np.array(targets.numpy())
 
     # If there is an aux channel containing the integration times, then add that.
-    if 'timesteps' in aux_data.keys():
-        integration_timesteps = np.diff(np.asarray(aux_data['timesteps'].numpy()))
+    if "timesteps" in aux_data.keys():
+        integration_timesteps = np.diff(np.asarray(aux_data["timesteps"].numpy()))
     else:
         integration_timesteps = np.ones((len(inputs), seq_len))
 
     return full_inputs, targets.astype(float), integration_timesteps
 
 
-def train_epoch(state, rng, model, trainloader, seq_len, in_dim, batchnorm, lr_params):
+def train_epoch(
+    state, rng, model, trainloader, seq_len, in_dim, batchnorm, lr_params, epoch
+):
     """
     Training function for an epoch that loops over batches.
     """
@@ -348,7 +471,7 @@ def train_epoch(state, rng, model, trainloader, seq_len, in_dim, batchnorm, lr_p
     batch_losses = []
 
     decay_function, ssm_lr, lr, step, end_step, opt_config, lr_min = lr_params
-
+    n_batches = len(trainloader)
     for batch_idx, batch in enumerate(tqdm(trainloader)):
         inputs, labels, integration_times = prep_batch(batch, seq_len, in_dim)
         rng, drop_rng = jax.random.split(rng)
@@ -360,6 +483,7 @@ def train_epoch(state, rng, model, trainloader, seq_len, in_dim, batchnorm, lr_p
             integration_times,
             model,
             batchnorm,
+            iter=int(n_batches * epoch + batch_idx),
         )
         batch_losses.append(loss)
         lr_params = (decay_function, ssm_lr, lr, step, end_step, opt_config, lr_min)
@@ -375,7 +499,9 @@ def validate(state, model, testloader, seq_len, in_dim, batchnorm, step_rescale=
     losses, accuracies, preds = np.array([]), np.array([]), np.array([])
     for batch_idx, batch in enumerate(tqdm(testloader)):
         inputs, labels, integration_timesteps = prep_batch(batch, seq_len, in_dim)
-        loss, acc, pred = eval_step(inputs, labels, integration_timesteps, state, model, batchnorm)
+        loss, acc, pred = eval_step(
+            inputs, labels, integration_timesteps, state, model, batchnorm
+        )
         losses = np.append(losses, loss)
         accuracies = np.append(accuracies, acc)
 
@@ -384,37 +510,45 @@ def validate(state, model, testloader, seq_len, in_dim, batchnorm, step_rescale=
 
 
 @partial(jax.jit, static_argnums=(5, 6))
-def train_step(state,
-               rng,
-               batch_inputs,
-               batch_labels,
-               batch_integration_timesteps,
-               model,
-               batchnorm,
-               ):
+def train_step(
+    state,
+    rng,
+    batch_inputs,
+    batch_labels,
+    batch_integration_timesteps,
+    model,
+    batchnorm,
+    iter: int,
+):
     """Performs a single training step given a batch of data"""
-    def loss_fn(params):
 
+    def loss_fn(params, iter):
         if batchnorm:
             logits, mod_vars = model.apply(
                 {"params": params, "batch_stats": state.batch_stats},
-                batch_inputs, batch_integration_timesteps,
+                batch_inputs,
+                batch_integration_timesteps,
                 rngs={"dropout": rng},
                 mutable=["intermediates", "batch_stats"],
+                iter=iter,
             )
         else:
             logits, mod_vars = model.apply(
                 {"params": params},
-                batch_inputs, batch_integration_timesteps,
+                batch_inputs,
+                batch_integration_timesteps,
                 rngs={"dropout": rng},
                 mutable=["intermediates"],
+                iter=iter,
             )
 
         loss = np.mean(cross_entropy_loss(logits, batch_labels))
 
         return loss, (mod_vars, logits)
 
-    (loss, (mod_vars, logits)), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
+    (loss, (mod_vars, logits)), grads = jax.value_and_grad(
+        loss_fn, has_aux=True, argnums=0
+    )(state.params, iter)
 
     if batchnorm:
         state = state.apply_gradients(grads=grads, batch_stats=mod_vars["batch_stats"])
@@ -424,21 +558,26 @@ def train_step(state,
 
 
 @partial(jax.jit, static_argnums=(4, 5))
-def eval_step(batch_inputs,
-              batch_labels,
-              batch_integration_timesteps,
-              state,
-              model,
-              batchnorm,
-              ):
+def eval_step(
+    batch_inputs,
+    batch_labels,
+    batch_integration_timesteps,
+    state,
+    model,
+    batchnorm,
+):
     if batchnorm:
-        logits = model.apply({"params": state.params, "batch_stats": state.batch_stats},
-                             batch_inputs, batch_integration_timesteps,
-                             )
+        logits = model.apply(
+            {"params": state.params, "batch_stats": state.batch_stats},
+            batch_inputs,
+            batch_integration_timesteps,
+        )
     else:
-        logits = model.apply({"params": state.params},
-                             batch_inputs, batch_integration_timesteps,
-                             )
+        logits = model.apply(
+            {"params": state.params},
+            batch_inputs,
+            batch_integration_timesteps,
+        )
 
     losses = cross_entropy_loss(logits, batch_labels)
     accs = compute_accuracy(logits, batch_labels)
