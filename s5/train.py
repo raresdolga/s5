@@ -275,12 +275,12 @@ def train(args):
 
         if valloader is not None:
             print(f"[*] Running Epoch {epoch + 1} Validation...")
-            val_loss, val_acc = validate(
+            val_loss, val_acc, norms = validate(
                 state, model_cls, valloader, seq_len, in_dim, args.batchnorm
             )
 
             print(f"[*] Running Epoch {epoch + 1} Test...")
-            test_loss, test_acc = validate(
+            test_loss, test_acc, _ = validate(
                 state, model_cls, testloader, seq_len, in_dim, args.batchnorm
             )
 
@@ -294,7 +294,7 @@ def train(args):
         else:
             # else use test set as validation set (e.g. IMDB)
             print(f"[*] Running Epoch {epoch + 1} Test...")
-            val_loss, val_acc = validate(
+            val_loss, val_acc, norms = validate(
                 state, model_cls, testloader, seq_len, in_dim, args.batchnorm
             )
 
@@ -324,7 +324,7 @@ def train(args):
             if speech:
                 # Evaluate on resolution 2 val and test sets
                 print(f"[*] Running Epoch {epoch + 1} Res 2 Validation...")
-                val2_loss, val2_acc = validate(
+                val2_loss, val2_acc, _ = validate(
                     state,
                     model_cls,
                     aux_dataloaders["valloader2"],
@@ -335,7 +335,7 @@ def train(args):
                 )
 
                 print(f"[*] Running Epoch {epoch + 1} Res 2 Test...")
-                test2_loss, test2_acc = validate(
+                test2_loss, test2_acc, _ = validate(
                     state,
                     model_cls,
                     aux_dataloaders["testloader2"],
@@ -393,24 +393,24 @@ def train(args):
                     }
                 )
             else:
-                wandb.log(
-                    {
-                        "Training Loss": train_loss,
-                        "Val loss": val_loss,
-                        "Val Accuracy": val_acc,
-                        "Test Loss": test_loss,
-                        "Test Accuracy": test_acc,
-                        "count": count,
-                        "Learning rate count": lr_count,
-                        "Opt acc": opt_acc,
-                        "lr": state.opt_state.inner_states[
-                            "regular"
-                        ].inner_state.hyperparams["learning_rate"],
-                        "ssm_lr": state.opt_state.inner_states[
-                            "ssm"
-                        ].inner_state.hyperparams["learning_rate"],
-                    }
-                )
+                wandb_dict = {
+                    "Training Loss": train_loss,
+                    "Val loss": val_loss,
+                    "Val Accuracy": val_acc,
+                    "Test Loss": test_loss,
+                    "Test Accuracy": test_acc,
+                    "count": count,
+                    "Learning rate count": lr_count,
+                    "Opt acc": opt_acc,
+                    "lr": state.opt_state.inner_states[
+                        "regular"
+                    ].inner_state.hyperparams["learning_rate"],
+                    "ssm_lr": state.opt_state.inner_states[
+                        "ssm"
+                    ].inner_state.hyperparams["learning_rate"],
+                }
+                wandb_dict.update(norms)
+                wandb.log(wandb_dict)
 
         else:
             wandb.log(

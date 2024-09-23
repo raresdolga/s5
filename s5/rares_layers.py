@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import jax
 import numpy as np
 from flax import linen as nn
@@ -20,7 +18,6 @@ class LRU(nn.Module):
     max_phase: float = jnp.pi / 10
     bidirectional: bool = True
     step_rescale: float = 1.0
-    layer: int = 1
     out_dir: str = "./out/lru"
 
     @staticmethod
@@ -73,7 +70,7 @@ class LRU(nn.Module):
         return inner_states
 
     @nn.compact
-    def __call__(self, x, iter: int = 1):
+    def __call__(self, x):
         """
         Args:
             x: jnp.array(TD)
@@ -129,9 +126,8 @@ class LRU(nn.Module):
         y_norm = jnp.sqrt(
             jnp.einsum("...i,...i->...", inner_states.real, inner_states.real)
             + jnp.einsum("...i,...i->...", inner_states.imag, inner_states.imag)
-        )
-        Path(self.out_dir).mkdir(parents=True, exist_ok=True)
-        jnp.save(f"{self.out_dir}/x_norm_layer={self.layer}_iter={iter}.npy", y_norm)
+        ).mean()
+        self.sow("intermediates", "x_norm", y_norm)
 
         y = jnp.einsum("HN,LN->LH", C, inner_states).real + jnp.einsum("H,LH->LH", D, x)
         # y = jax.vmap(lambda x, u: (x@C.T).real + D * u)(inner_states, x).transpose(1,0,2) # LBH -> BLH
@@ -249,7 +245,6 @@ class GammaDecayBlockDiagEfficient(nn.Module):
     max_phase: float = 6.28
     bidirectional: bool = False
     step_rescale: float = 0.0
-    layer: int = 1
     out_dir: str = "./out/rotssm"
 
     def theta_init(self, rng_key, N, max_phase):
@@ -325,7 +320,7 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         return res
 
     @nn.compact
-    def __call__(self, input_sequence, iter: int = 1):
+    def __call__(self, input_sequence):
         # add dummy batch dimension for code
         x = input_sequence[None, ...]
         # print("Input: ", x.shape)
@@ -378,9 +373,8 @@ class GammaDecayBlockDiagEfficient(nn.Module):
             y = jnp.concatenate([y, backward], axis=-1)
             C = jnp.concatenate([C, C2], axis=-1)
 
-        y_norm = jnp.sqrt(jnp.einsum("...i,...i->...", y, y))
-        Path(self.out_dir).mkdir(parents=True, exist_ok=True)
-        jnp.save(f"{self.out_dir}/x_norm_layer={self.layer}_iter={iter}.npy", y_norm)
+        y_norm = jnp.sqrt(jnp.einsum("...i,...i->...", y, y)).mean()
+        self.sow("intermediates", "x_norm", y_norm)
 
         y = y.transpose(2, 1, 0, 3)  # H T B N -> B T H N
         y = jnp.einsum("Dn,BTn->BTD", C, y.reshape(batch_sz, T, -1)) + D * x

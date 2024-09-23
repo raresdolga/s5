@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import partial
 from typing import Any, Tuple
 
@@ -471,7 +472,6 @@ def train_epoch(
     batch_losses = []
 
     decay_function, ssm_lr, lr, step, end_step, opt_config, lr_min = lr_params
-    n_batches = len(trainloader)
     for batch_idx, batch in enumerate(tqdm(trainloader)):
         inputs, labels, integration_times = prep_batch(batch, seq_len, in_dim)
         rng, drop_rng = jax.random.split(rng)
@@ -483,7 +483,6 @@ def train_epoch(
             integration_times,
             model,
             batchnorm,
-            iter=int(n_batches * epoch + batch_idx),
         )
         batch_losses.append(loss)
         lr_params = (decay_function, ssm_lr, lr, step, end_step, opt_config, lr_min)
@@ -497,16 +496,20 @@ def validate(state, model, testloader, seq_len, in_dim, batchnorm, step_rescale=
     """Validation function that loops over batches"""
     model = model(training=False, step_rescale=step_rescale)
     losses, accuracies, preds = np.array([]), np.array([]), np.array([])
+    norms = defaultdict(list)
     for batch_idx, batch in enumerate(tqdm(testloader)):
         inputs, labels, integration_timesteps = prep_batch(batch, seq_len, in_dim)
-        loss, acc, pred = eval_step(
+        loss, acc, pred, norm = eval_step(
             inputs, labels, integration_timesteps, state, model, batchnorm
         )
         losses = np.append(losses, loss)
         accuracies = np.append(accuracies, acc)
+        for i, layer in enumerate(norm["intermediates"]["encoder"].values()):
+            norms[f"layer_{i}_norm"].append(layer["seq"]["x_norm"][0].mean())
 
     aveloss, aveaccu = np.mean(losses), np.mean(accuracies)
-    return aveloss, aveaccu
+    norms = {k: np.mean(np.array(v)) for k, v in norms.items()}
+    return aveloss, aveaccu, norms
 
 
 @partial(jax.jit, static_argnums=(5, 6))
@@ -518,19 +521,17 @@ def train_step(
     batch_integration_timesteps,
     model,
     batchnorm,
-    iter: int,
 ):
     """Performs a single training step given a batch of data"""
 
-    def loss_fn(params, iter):
+    def loss_fn(params):
         if batchnorm:
             logits, mod_vars = model.apply(
                 {"params": params, "batch_stats": state.batch_stats},
                 batch_inputs,
                 batch_integration_timesteps,
                 rngs={"dropout": rng},
-                mutable=["intermediates", "batch_stats"],
-                iter=iter,
+                mutable=["batch_stats"],
             )
         else:
             logits, mod_vars = model.apply(
@@ -538,8 +539,7 @@ def train_step(
                 batch_inputs,
                 batch_integration_timesteps,
                 rngs={"dropout": rng},
-                mutable=["intermediates"],
-                iter=iter,
+                mutable=[],
             )
 
         loss = np.mean(cross_entropy_loss(logits, batch_labels))
@@ -548,7 +548,7 @@ def train_step(
 
     (loss, (mod_vars, logits)), grads = jax.value_and_grad(
         loss_fn, has_aux=True, argnums=0
-    )(state.params, iter)
+    )(state.params)
 
     if batchnorm:
         state = state.apply_gradients(grads=grads, batch_stats=mod_vars["batch_stats"])
@@ -567,19 +567,21 @@ def eval_step(
     batchnorm,
 ):
     if batchnorm:
-        logits = model.apply(
+        logits, norms = model.apply(
             {"params": state.params, "batch_stats": state.batch_stats},
             batch_inputs,
             batch_integration_timesteps,
+            mutable="intermediates",
         )
     else:
-        logits = model.apply(
+        logits, norms = model.apply(
             {"params": state.params},
             batch_inputs,
             batch_integration_timesteps,
+            mutable="intermediates",
         )
 
     losses = cross_entropy_loss(logits, batch_labels)
     accs = compute_accuracy(logits, batch_labels)
 
-    return losses, accs, logits
+    return losses, accs, logits, norms

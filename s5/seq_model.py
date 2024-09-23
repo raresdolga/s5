@@ -50,9 +50,8 @@ class StackedEncoderModel(nn.Module):
                 batchnorm=self.batchnorm,
                 bn_momentum=self.bn_momentum,
                 step_rescale=self.step_rescale,
-                layer=i,
             )
-            for i in range(self.n_layers)
+            for _ in range(self.n_layers)
         ]
 
     def __call__(self, x, integration_timesteps):
@@ -192,6 +191,7 @@ BatchClassificationModel = nn.vmap(
         "batch_stats": None,
         "cache": 0,
         "prime": None,
+        "intermediates": 0,
     },
     split_rngs={"params": False, "dropout": True},
     axis_name="batch",
