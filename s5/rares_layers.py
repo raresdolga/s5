@@ -347,7 +347,7 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         trace_per_head = jnp.trace(jnp.einsum("HDd,HAd->HDA", B, B), axis1=-2, axis2=-1)
         norm = jnp.sqrt((1 - gamma**2) / trace_per_head)  #  H / H elementwise -> H
         B_norm = jnp.einsum("H,HnD->HnD", norm, B)
-        P = jax.scipy.linalg.expm(P - P.transpose(0, 2, 1))
+        # P = jax.scipy.linalg.expm(P - P.transpose(0, 2, 1))
         # apply P.T to Bx_t
         Us = jnp.einsum("HnD,BTD->HTBn", B_norm, x)
         Us = jnp.einsum("HnN,HTBn->HTBN", P.transpose(0, 2, 1), Us)
