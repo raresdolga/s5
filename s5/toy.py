@@ -3,7 +3,7 @@ from jax import numpy as jnp
 from jax import random as jr
 from jax.scipy.linalg import block_diag
 from matplotlib import pyplot as plt
-from rares_layers import LRU, GammaDecayBlockDiagEfficient
+from rares_layers import LRU, GammaDecayBlockDiagEfficient, SimpleRotRNN
 from ssm import S5SSM
 from ssm_init import make_DPLR_HiPPO
 
@@ -23,9 +23,9 @@ key = jr.PRNGKey(0)
 
 # toy_inputs = jr.normal(input_key, (T, input_size)) * 10
 
-n_seqs = 3
+n_seqs = 1
 
-model_types = ["rotssm", "lru", "s5"]
+model_types = ["simple_rotrnn", "rotrnn", "lru", "s5"]
 
 fig, ax = plt.subplots(n_seqs, 1)
 if n_seqs == 1:
@@ -49,7 +49,7 @@ for n in range(n_seqs):
                 max_phase=max_phase,
                 bidirectional=bidirectional,
             )
-        elif model_type == "rotssm":
+        elif model_type == "rotrnn":
             model = GammaDecayBlockDiagEfficient(
                 lru_dim=ssm_size,
                 hidden_dim=input_size,
@@ -58,6 +58,16 @@ for n in range(n_seqs):
                 max_phase=max_phase,
                 bidirectional=bidirectional,
                 nheads=32,
+            )
+        elif model_type == "simple_rotrnn":
+            model = SimpleRotRNN(
+                rotrnn_dim=ssm_size,
+                model_dim=input_size,
+                gamma_min=r_min,
+                gamma_max=r_max,
+                max_phase=max_phase,
+                bidirectional=bidirectional,
+                n_heads=32,
             )
         elif model_type == "s5":
             block_size = 16
@@ -98,14 +108,17 @@ for n in range(n_seqs):
             )
         else:
             output_norm = jnp.sqrt(jnp.einsum("...i,...i->...", outputs, outputs))
-        if model_type == "rotssm":
+        if model_type == "rotrnn":
             output_norm = output_norm.mean(axis=-1)
+        if model_type == "simple_rotrnn":
+            output_norm = output_norm.mean(axis=0)
 
         norms.append(output_norm)
 
     for norm, name in zip(norms, model_types):
+        print(norm.shape, T)
         ax[n].scatter(range(T), norm, label=name, linewidths=0.1)
         print(name)
         jax.debug.print("{x}", x=norm.max())
 ax[0].legend()
-plt.savefig("toy.png")
+plt.savefig("toy_simple.png")

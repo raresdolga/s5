@@ -5,7 +5,7 @@ from jax import numpy as jnp
 from jax import random as jr
 from jax.scipy.linalg import block_diag
 from matplotlib import pyplot as plt
-from rares_layers import LRU, GammaDecayBlockDiagEfficient
+from rares_layers import LRU, GammaDecayBlockDiagEfficient, SimpleRotRNN
 from ssm import S5SSM
 from ssm_init import make_DPLR_HiPPO
 from tqdm import tqdm
@@ -29,15 +29,15 @@ r_min = 1e-6
 r_max = 1 - 1e-4
 max_phase = 6.28
 bidirectional = False
-model_type = "rotssm"
-T = 10000
+T = 1000
 nsteps = 1000
 batch_size = 8
 lr = 1e-2
 
 key = jr.PRNGKey(0)
 
-model_types = ["rotssm", "lru", "s5"]
+model_types = ["simple_rotrnn", "rotrnn"]
+# model_types = ["simple_rotrnn"]
 
 fig, ax = plt.subplots(2, 1)
 fig.set_figwidth(12)
@@ -79,7 +79,7 @@ for model_type in model_types:
             max_phase=max_phase,
             bidirectional=bidirectional,
         )
-    elif model_type == "rotssm":
+    elif model_type == "rotrnn":
         ssm = GammaDecayBlockDiagEfficient(
             lru_dim=ssm_size,
             hidden_dim=input_size,
@@ -88,6 +88,16 @@ for model_type in model_types:
             max_phase=max_phase,
             bidirectional=bidirectional,
             nheads=32,
+        )
+    elif model_type == "simple_rotrnn":
+        ssm = SimpleRotRNN(
+            rotrnn_dim=ssm_size,
+            model_dim=input_size,
+            gamma_min=r_min,
+            gamma_max=r_max,
+            max_phase=max_phase,
+            bidirectional=bidirectional,
+            n_heads=32,
         )
     elif model_type == "s5":
         block_size = 16
@@ -150,8 +160,6 @@ for model_type in model_types:
             hidden_state_norm = jnp.sqrt(
                 jnp.einsum("...i,...i->...", hidden_state, hidden_state)
             )
-        if model_type == "rotssm":
-            hidden_state_norm = hidden_state_norm.mean(axis=-1)
         norm = hidden_state_norm.mean()
         pbar.set_postfix(norm=norm, loss=loss)
         norms.append(norm)
@@ -161,8 +169,8 @@ for model_type in model_types:
     all_losses.append(losses)
 
 for loss, norm, name in zip(all_losses, all_norms, model_types):
-    ax[0].plot(norm, label=name, linewidth=0.1)
-    ax[1].plot(loss, label=name, linewidth=0.1)
+    ax[0].scatter(range(nsteps), norm, label=name, linewidth=0.1)
+    ax[1].plot(loss, label=name, linewidth=1)
     print(name)
 ax[0].legend()
-plt.savefig("toy_learning.png")
+plt.savefig("toy_learning_simple.png")
