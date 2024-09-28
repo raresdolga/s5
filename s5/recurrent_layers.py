@@ -74,17 +74,10 @@ class LRU(nn.Module):
             x: jnp.array(TD)
         """
         theta_log = self.param(
-            "theta_log",
-            self.theta_init,
-            self.lru_dim,
-            self.max_phase,
+            "theta_log", self.theta_init, self.lru_dim, self.max_phase
         )
         nu_log = self.param(
-            "nu_log",
-            self.nu_init,
-            self.lru_dim,
-            self.r_min,
-            self.r_max,
+            "nu_log", self.nu_init, self.lru_dim, self.r_min, self.r_max
         )
         B_re = self.param("B_re", self.b_init, self.lru_dim, self.hidden_dim)
         B_im = self.param("B_im", self.b_init, self.lru_dim, self.hidden_dim)
