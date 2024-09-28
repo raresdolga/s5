@@ -1,5 +1,4 @@
 import jax
-import numpy as np
 from flax import linen as nn
 from jax import numpy as jnp
 
@@ -127,101 +126,6 @@ class LRU(nn.Module):
         return y
 
 
-class LRU2(nn.Module):
-    N: int
-    H: int
-    r_min: float
-    r_max: float
-    max_phase: float
-    bidirectional: bool = False
-    step_rescale: float = 0.0
-
-    def theta_init(self, key, N, max_phase):
-        u2 = jax.random.uniform(key, shape=(N,))
-        theta_log = jnp.log(max_phase * u2)
-        return theta_log
-
-    def nu_init(self, key, N, r_max, r_min):
-        u1 = jax.random.uniform(key, shape=(N,))
-        nu_log = jnp.log(-0.5 * jnp.log(u1 * (r_max**2 - r_min**2) + r_min**2))
-        return nu_log
-
-    def b_init(self, key, N, H):
-        B_re = jax.random.normal(key, shape=(N, H)) / np.sqrt(2 * H)
-        # B_im = np.random.normal(size=(N,H))/np.sqrt(2*H)
-        return B_re
-
-    def c_init(self, key, N, H):
-        C_re = jax.random.normal(key, shape=(H, N)) / np.sqrt(N)
-        # C_im = np.random.normal(size=(H,N))/np.sqrt(N)
-        return C_re
-
-    @nn.compact
-    def __call__(self, input_sequence):
-        """Forward pass of the LRU layer. Output y and input_sequence are of shape (L, H)."""
-
-        # All LRU parameters
-        # nu_log, theta_log, B_re, B_im, C_re, C_im, D, gamma_log = lru_parameters
-        theta_log = self.param(
-            "theta_log",
-            self.theta_init,
-            self.N,
-            self.max_phase,
-        )
-        nu_log = self.param(
-            "nu_log",
-            self.nu_init,
-            self.N,
-            self.r_min,
-            self.r_max,
-        )
-
-        B_re = self.param("B_re", self.b_init, self.N, self.H)
-        B_im = self.param("B_im", self.b_init, self.N, self.H)
-        C_re = self.param("C_re", self.c_init, self.N, self.H)
-        C_im = self.param("C_im", self.c_init, self.N, self.H)
-        D = self.param("D", jax.random.normal, (self.H,))
-
-        # Normalization factor
-        diag_lambda = jnp.exp(-jnp.exp(nu_log) + 1j * jnp.exp(theta_log))
-        gamma_log = jnp.log(jnp.sqrt(1 - jnp.abs(diag_lambda) ** 2))
-        # Materializing the diagonal of Lambda and projections
-        Lambda = jnp.exp(-jnp.exp(nu_log) + 1j * jnp.exp(theta_log))
-        B_norm = (B_re + 1j * B_im) * jnp.expand_dims(jnp.exp(gamma_log), axis=-1)
-        C = C_re + 1j * C_im
-
-        # Running the LRU + output projection
-        # For details on parallel scan, check discussion in Smith et al (2022).
-        Lambda_elements = jnp.repeat(Lambda[None, ...], input_sequence.shape[0], axis=0)
-        Bu_elements = jax.vmap(lambda u: B_norm @ u)(input_sequence)
-        elements = (Lambda_elements, Bu_elements)
-        _, inner_states = parallel_scan(binary_operator_diag, elements)  # all x_k
-        y = jax.vmap(lambda x, u: (C @ x).real + D * u)(inner_states, input_sequence)
-
-        return y
-
-    def init_lru_parameters(N, H, r_min=0, r_max=1, max_phase=6.28):
-        """Initialize parameters of the LRU layer."""
-        # N: state dimension, H: model dimension
-        # Initialization of Lambda is complex valued distributed uniformly on ring
-        # between r_min and r_max, with phase in [0, max_phase].
-        u1 = np.random.uniform(size=(N,))
-        u2 = np.random.uniform(size=(N,))
-        nu_log = np.log(-0.5 * np.log(u1 * (r_max**2 - r_min**2) + r_min**2))
-        theta_log = np.log(max_phase * u2)
-
-        # Glorot initialized Input/Output projection matrices
-        B_re = np.random.normal(size=(N, H)) / np.sqrt(2 * H)
-        B_im = np.random.normal(size=(N, H)) / np.sqrt(2 * H)
-        C_re = np.random.normal(size=(H, N)) / np.sqrt(N)
-        C_im = np.random.normal(size=(H, N)) / np.sqrt(N)
-        D = np.random.normal(size=(H,))
-        # Normalization factor
-        diag_lambda = np.exp(-np.exp(nu_log) + 1j * np.exp(theta_log))
-        gamma_log = np.log(np.sqrt(1 - np.abs(diag_lambda) ** 2))
-        return nu_log, theta_log, B_re, B_im, C_re, C_im, D, gamma_log
-
-
 def binary_operator_diag(element_i, element_j):
     # Binary operator for parallel scan of linear recurrence.
     a_i, bu_i = element_i
@@ -346,8 +250,8 @@ class SimpleRotRNN(nn.Module):
             C = jnp.concatenate([C, C2], axis=-1)
 
         # concatenate heads
-        y = x.transpose(1, 0, 2).reshape(T, -1)
+        x = x.transpose(1, 0, 2).reshape(T, -1)
 
         # apply output projection/head mixing and skip connection
-        y = jax.vmap(lambda a: C @ a)(y) + D * input_sequence
-        return y, x
+        x = jax.vmap(lambda a: C @ a)(x) + D * input_sequence
+        return x
