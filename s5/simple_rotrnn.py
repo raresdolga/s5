@@ -8,9 +8,8 @@ parallel_scan = jax.lax.associative_scan
 def forward(rotrnn_params, input_sequence):
     """Forward pass through the RotRNN layer"""
 
-    theta_log, gamma_log, M, B, C, D = rotrnn_params
+    thetas, gamma_log, M, B, C, D = rotrnn_params
     gammas = jnp.exp(-jnp.exp(gamma_log))
-    thetas = jnp.exp(theta_log)
 
     T, dim_u = input_sequence.shape
 
@@ -51,8 +50,10 @@ def forward(rotrnn_params, input_sequence):
 def init_params(H, dim_x, dim_u, gamma_min, gamma_max, theta_max):
     """Initialise the learnable parameters"""
 
-    # initialise \theta in [0, theta_max]
-    theta_log = jnp.log(np.random.uniform(0, theta_max, (H, dim_x // 2)))
+    dim_h = dim_x // H
+
+    # random initialisation of \theta in [0, theta_max]
+    theta = np.random.uniform(0, theta_max, (H, dim_h // 2))
 
     # constrained initialisation of \gamma in [gamma_min, gamma_max]
     u1 = np.random.uniform(size=(H, 1))
@@ -60,15 +61,17 @@ def init_params(H, dim_x, dim_u, gamma_min, gamma_max, theta_max):
         -0.5 * jnp.log(u1 * (gamma_max**2 - gamma_min**2) + gamma_min**2)
     )
 
-    # Glorot initialised weight matrices
-    M = np.random.normal(size=(H, dim_x, dim_x)) / np.sqrt(H * dim_x)
-    B = np.random.normal(size=(H, dim_x, dim_u)) / np.sqrt((H * dim_x + H * dim_u) / 2)
-    C = np.random.normal(size=(dim_u, H * dim_x)) / np.sqrt((H * dim_x + H * dim_u) / 2)
+    # Glorot initialised input/output matrices
+    B = np.random.normal(size=(H, dim_h, dim_u)) / np.sqrt(dim_u)
+    C = np.random.normal(size=(dim_u, dim_x)) / np.sqrt(dim_x)
+
+    # Orthogonal weight matrix M
+    M = np.random.normal(size=(H, dim_h, dim_h))
 
     # D is random vector applied element-wise to u
     D = np.random.normal(size=(dim_u))
 
-    return theta_log, gamma_log, M, B, C, D
+    return theta, gamma_log, M, B, C, D
 
 
 def binf(a, b):
@@ -76,7 +79,6 @@ def binf(a, b):
     gamma_i, thetas_i, acc_i = a
     gamma_j, thetas_j, acc_j = b
 
-    # acc_i = acc_i.reshape((-1,))
     # get off diagonal terms [-x2, x1, -x4, x3,...]
     # these will be multiplied by sin(\theta)
     off_diags = jnp.stack([-acc_i[..., 1::2], acc_i[..., 0::2]], axis=-1)
@@ -97,25 +99,25 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # initialise parameters
-    H = 4
-    dim_x = 16
+    H = 32
+    dim_x = 256
     dim_u = 2
     gamma_min = 0.1
     gamma_max = 0.9
     theta_max = 2 * np.pi
 
-    rotrnn_params = init_params(H, dim_x // H, dim_u, gamma_min, gamma_max, theta_max)
+    rotrnn_params = init_params(H, dim_x, dim_u, gamma_min, gamma_max, theta_max)
 
     # create a random input sequence
-    T = 100
+    T = 10000
     input_sequence = np.random.normal(size=(T, dim_u))
 
     # run the forward pass
     y = forward(rotrnn_params, input_sequence)
 
-    y = jnp.linalg.norm(y, axis=-1)
-    print(y.mean())
-    exit()
+    # y = jnp.linalg.norm(y, axis=-1)
+    # print(y.mean())
+    # exit()
     # plot the output
     plt.plot(y)
     plt.show()
