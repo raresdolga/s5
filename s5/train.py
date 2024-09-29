@@ -48,7 +48,6 @@ def train(args):
     wandb.log({"block_size": block_size})
 
     # Set global learning rate lr (e.g. encoders, etc.) as function of ssm_lr
-    # lr = args.lr_factor * ssm_lr
     lr = args.global_lr if args.global_lr is not None else args.lr_factor * ssm_lr
 
     # Set randomness...
@@ -98,30 +97,30 @@ def train(args):
     ) = create_dataset_fn(args.dir_name, seed=args.jax_seed, bsz=args.bsz)
 
     print(f"[*] Starting S5 Training on `{args.dataset}` =>> Initializing...")
-
-    # Initialize state matrix A using approximation to HiPPO-LegS matrix
-    Lambda, _, B, V, B_orig = make_DPLR_HiPPO(block_size)
-
-    if args.conj_sym:
-        block_size = block_size // 2
-        ssm_size = ssm_size // 2
-
-    Lambda = Lambda[:block_size]
-    V = V[:, :block_size]
-    Vc = V.conj().T
-
-    # If initializing state matrix A as block-diagonal, put HiPPO approximation
-    # on each block
-    Lambda = (Lambda * np.ones((args.blocks, block_size))).ravel()
-    V = block_diag(*([V] * args.blocks))
-    Vinv = block_diag(*([Vc] * args.blocks))
-
-    print("Lambda.shape={}".format(Lambda.shape))
-    print("V.shape={}".format(V.shape))
-    print("Vinv.shape={}".format(Vinv.shape))
-
     print("Len train loader: ", len(trainloader))
+
     if args.ssm_type == "s5":
+        # Initialize state matrix A using approximation to HiPPO-LegS matrix
+        Lambda, _, B, V, B_orig = make_DPLR_HiPPO(block_size)
+
+        if args.conj_sym:
+            block_size = block_size // 2
+            ssm_size = ssm_size // 2
+
+        Lambda = Lambda[:block_size]
+        V = V[:, :block_size]
+        Vc = V.conj().T
+
+        # If initializing state matrix A as block-diagonal, put HiPPO approximation
+        # on each block
+        Lambda = (Lambda * np.ones((args.blocks, block_size))).ravel()
+        V = block_diag(*([V] * args.blocks))
+        Vinv = block_diag(*([Vc] * args.blocks))
+
+        print("Lambda.shape={}".format(Lambda.shape))
+        print("V.shape={}".format(V.shape))
+        print("Vinv.shape={}".format(Vinv.shape))
+
         print("Layer type: s5")
         print("ssm_size: ", ssm_size, "bidirectional: ", args.bidirectional)
         ssm_init_fn = init_S5SSM(
