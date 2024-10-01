@@ -441,7 +441,7 @@ class SimpleRotRNN(nn.Module):
     def __call__(self, input_sequence):
         H, N = self.n_heads, self.rotrnn_dim // self.n_heads
         assert N % 2 == 0, "N should be even"
-        theta = self.param("theta", self.theta_init, H, N, self.max_phase)
+        thetas = self.param("theta", self.theta_init, H, N, self.max_phase)
         M = self.param("M", self.ortho_mat_init, H, N, N)
         B = self.param("B", self.input_mat_init, H, N, self.model_dim)
         C = self.param("C", self.output_mat_init, self.model_dim, self.rotrnn_dim)
@@ -451,15 +451,15 @@ class SimpleRotRNN(nn.Module):
             "D", lambda rng, H: jax.random.normal(rng, shape=(H,)), self.model_dim
         )
         gamma_log = self.param("gamma_log", self.gamma_log_init, H)
-        gamma = jnp.exp(-jnp.exp(gamma_log))
+        gammas = jnp.exp(-jnp.exp(gamma_log))
 
         T, dim_u = input_sequence.shape
 
         # compute \xi and normalise B
         B_T_B = jax.vmap(lambda a, b: a @ b)(B.transpose(0, 2, 1), B)
         B_T_B_trace = jnp.trace(B_T_B, axis1=1, axis2=2)
-        xi = jnp.sqrt((1 - gamma.squeeze() ** 2) / B_T_B_trace)
-        B_norm = xi[..., None, None] * B
+        xi = jnp.sqrt((1 - gammas.squeeze() ** 2) / B_T_B_trace)
+        B_norm = jnp.einsum("H, HTD -> HTD", xi, B)
 
         # create orthogonal matrix P from weight matrix M
         P = jax.scipy.linalg.expm(M - M.transpose(0, 2, 1))
@@ -467,36 +467,25 @@ class SimpleRotRNN(nn.Module):
         # project inputs onto heads
         x = jnp.einsum("HDi,Ti->HTD", B_norm, input_sequence)
 
-        # multiply by P^T
-        x = jax.vmap(lambda a, b: a @ b)(P.transpose(0, 2, 1), x)
+        # project with P^T
+        x = jnp.einsum("HDi, HTi -> HTD", P.transpose(0, 2, 1), x)
 
         # compute recurrence parallelised over heads
-        gamma = jnp.repeat(gamma[:, None], repeats=T, axis=1)
-        theta = jnp.repeat(theta[:, None], repeats=T, axis=1)
-        multi_head_scan = jax.vmap(
-            lambda g, t, x, rev: parallel_scan(self.binf, (g, t, x), rev),
-            in_axes=(0, 0, 0, None),
+        gammas = jnp.repeat(gammas[:, None], repeats=T, axis=1)
+        thetas = jnp.repeat(thetas[:, None], repeats=T, axis=1)
+        rec_fn = jax.vmap(
+            lambda a, b, c: parallel_scan(self.binf, (a, b, c)),
+            in_axes=(0, 0, 0),
             out_axes=0,
         )
-        xs = multi_head_scan(gamma, theta, x, False)[2]
+        x = rec_fn(gammas, thetas, x)[2]
 
-        # multiply by P
-        xs = jnp.einsum("HDi, HTi -> HTD", P, xs)
-
-        if self.bidirectional:
-            # compute reverse recurrence parallelised over heads
-            bwd = multi_head_scan(gamma, theta, x, True)[2]
-
-            # multiply by P
-            bwd = jnp.einsum("HDi, HTi -> HTD", P, bwd)
-
-            # concatenate fwd and bwd over dimension
-            xs = jnp.concatenate([xs, bwd], axis=-1)
-            C = jnp.concatenate([C, C2], axis=-1)
+        # project back with P
+        x = jnp.einsum("HDi, HTi -> HTD", P, x)
 
         # concatenate heads
-        y = xs.transpose(1, 0, 2).reshape(T, -1)
+        x = x.transpose(1, 0, 2).reshape(T, -1)
 
         # apply output projection/head mixing and skip connection
-        y = jax.vmap(lambda a: C @ a)(y) + D * input_sequence
+        y = jax.vmap(lambda a: C @ a)(x) + D * input_sequence
         return y
