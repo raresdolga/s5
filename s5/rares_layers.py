@@ -403,7 +403,7 @@ class SimpleRotRNN(nn.Module):
     def input_mat_init(self, rng_key, n_heads, output_dim, input_dim):
         M = jax.random.normal(
             rng_key, shape=(n_heads, output_dim, input_dim)
-        ) / jnp.sqrt((self.model_dim) / 2)
+        ) / jnp.sqrt(self.model_dim + self.rotrnn_dim)
         return M
 
     def ortho_mat_init(self, rng_key, n_heads, output_dim, input_dim):
@@ -412,7 +412,7 @@ class SimpleRotRNN(nn.Module):
 
     def output_mat_init(self, rng_key, output_dim, input_dim):
         M = jax.random.normal(rng_key, shape=(output_dim, input_dim)) / jnp.sqrt(
-            (self.rotrnn_dim) / 2
+            self.model_dim + self.rotrnn_dim
         )
         return M
 
