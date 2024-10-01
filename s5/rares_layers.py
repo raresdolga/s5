@@ -467,8 +467,8 @@ class SimpleRotRNN(nn.Module):
         # project inputs onto heads
         x = jnp.einsum("HDi,Ti->HTD", B_norm, input_sequence)
 
-        # multiply from the right by P^T
-        x = jax.vmap(lambda a, b: a @ b)(x, P.transpose(0, 2, 1))
+        # multiply by P^T
+        x = jax.vmap(lambda a, b: a @ b)(P.transpose(0, 2, 1), x)
 
         # compute recurrence parallelised over heads
         gamma = jnp.repeat(gamma[:, None], repeats=T, axis=1)
@@ -478,24 +478,24 @@ class SimpleRotRNN(nn.Module):
             in_axes=(0, 0, 0, None),
             out_axes=0,
         )
-        x = multi_head_scan(gamma, theta, x, False)[2]
+        xs = multi_head_scan(gamma, theta, x, False)[2]
 
-        # multiply from the left by P
-        x = jnp.einsum("HDi, HTi -> HTD", P, x)
+        # multiply by P
+        xs = jnp.einsum("HDi, HTi -> HTD", P, xs)
 
         if self.bidirectional:
             # compute reverse recurrence parallelised over heads
             bwd = multi_head_scan(gamma, theta, x, True)[2]
 
-            # multiply from the left by P
+            # multiply by P
             bwd = jnp.einsum("HDi, HTi -> HTD", P, bwd)
 
             # concatenate fwd and bwd over dimension
-            x = jnp.concatenate([x, bwd], axis=-1)
+            xs = jnp.concatenate([xs, bwd], axis=-1)
             C = jnp.concatenate([C, C2], axis=-1)
 
         # concatenate heads
-        y = x.transpose(1, 0, 2).reshape(T, -1)
+        y = xs.transpose(1, 0, 2).reshape(T, -1)
 
         # apply output projection/head mixing and skip connection
         y = jax.vmap(lambda a: C @ a)(y) + D * input_sequence
