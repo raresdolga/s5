@@ -167,11 +167,11 @@ def train(args):
             nheads=args.nheads,
             bidirectional=args.bidirectional,
         )
-    elif args.ssm_type == "simple_rotrnn":
-        from s5.rares_layers import SimpleRotRNN
+    elif args.ssm_type == "rotrnn":
+        from s5.rares_layers import RotRNN
 
         ssm_init_fn = partial(
-            SimpleRotRNN,
+            RotRNN,
             rotrnn_dim=args.ssm_size_base,
             model_dim=args.d_model,
             gamma_min=args.r_min,

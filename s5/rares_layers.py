@@ -378,7 +378,7 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         return output[0]
 
 
-class SimpleRotRNN(nn.Module):
+class RotRNN(nn.Module):
     rotrnn_dim: int = 64
     model_dim: int = 128
     n_heads: int = 64
@@ -478,10 +478,16 @@ class SimpleRotRNN(nn.Module):
             in_axes=(0, 0, 0),
             out_axes=0,
         )
-        x = rec_fn(gammas, thetas, x)[2]
+        hidden_states = rec_fn(gammas, thetas, x)[2]
 
         # project back with P
-        x = jnp.einsum("HDi, HTi -> HTD", P, x)
+        x = jnp.einsum("HDi, HTi -> HTD", P, hidden_states)
+
+        if self.bidirectional:
+            backward = rec_fn(gammas, thetas, hidden_states, reverse=True)[2]
+            backward = jnp.einsum("HDi, HTi -> HTD", P, backward)
+            x = jnp.concatenate([x, backward], axis=-1)
+            C = jnp.concatenate([C, C2], axis=-1)
 
         # concatenate heads
         x = x.transpose(1, 0, 2).reshape(T, -1)
