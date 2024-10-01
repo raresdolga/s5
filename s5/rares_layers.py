@@ -238,6 +238,7 @@ class GammaDecayBlockDiagEfficient(nn.Module):
     max_phase: float = 6.28
     bidirectional: bool = False
     step_rescale: float = 0.0
+    normalise: bool = True
 
     def theta_init(self, rng_key, N, max_phase):
         return jnp.log(jax.random.uniform(rng_key, shape=(N, 1), maxval=max_phase))
@@ -343,8 +344,13 @@ class GammaDecayBlockDiagEfficient(nn.Module):
         gamma_log = -jnp.exp(gamma_log)
         gamma = jnp.exp(gamma_log)
 
-        trace_per_head = jnp.trace(jnp.einsum("HDd,HAd->HDA", B, B), axis1=-2, axis2=-1)
-        norm = jnp.sqrt((1 - gamma**2) / trace_per_head)  #  H / H elementwise -> H
+        if self.normalise:
+            trace_per_head = jnp.trace(
+                jnp.einsum("HDd,HAd->HDA", B, B), axis1=-2, axis2=-1
+            )
+            norm = jnp.sqrt((1 - gamma**2) / trace_per_head)  #  H / H elementwise -> H
+        else:
+            norm = jnp.sqrt((1 - gamma**2))  #  H / H elementwise -> H
         B_norm = jnp.einsum("H,HnD->HnD", norm, B)
         P = jax.scipy.linalg.expm(P - P.transpose(0, 2, 1))
         # apply P.T to Bx_t
@@ -366,8 +372,8 @@ class GammaDecayBlockDiagEfficient(nn.Module):
             y = jnp.concatenate([y, backward], axis=-1)
             C = jnp.concatenate([C, C2], axis=-1)
 
-        y = y.transpose(2, 1, 0, 3)  # H T B N -> B T H N
-        output = jnp.einsum("Dn,BTn->BTD", C, y.reshape(batch_sz, T, -1)) + D * x
+        y = y.transpose(2, 1, 0, 3).reshape(batch_sz, T, -1)  # H T B N -> B T H N
+        output = jnp.einsum("Dn,BTn->BTD", C, y) + D * x
         # squeeze batch dimension
         return output[0], y[0]
 
@@ -493,4 +499,4 @@ class SimpleRotRNN(nn.Module):
 
         # apply output projection/head mixing and skip connection
         y = jax.vmap(lambda a: C @ a)(y) + D * input_sequence
-        return y, x
+        return y
