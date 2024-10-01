@@ -99,31 +99,30 @@ def train(args):
 
     print(f"[*] Starting S5 Training on `{args.dataset}` =>> Initializing...")
 
-    # Initialize state matrix A using approximation to HiPPO-LegS matrix
-    Lambda, _, B, V, B_orig = make_DPLR_HiPPO(block_size)
-
-    if args.conj_sym:
-        block_size = block_size // 2
-        ssm_size = ssm_size // 2
-
-    Lambda = Lambda[:block_size]
-    V = V[:, :block_size]
-    Vc = V.conj().T
-
-    # If initializing state matrix A as block-diagonal, put HiPPO approximation
-    # on each block
-    Lambda = (Lambda * np.ones((args.blocks, block_size))).ravel()
-    V = block_diag(*([V] * args.blocks))
-    Vinv = block_diag(*([Vc] * args.blocks))
-
-    print("Lambda.shape={}".format(Lambda.shape))
-    print("V.shape={}".format(V.shape))
-    print("Vinv.shape={}".format(Vinv.shape))
-
     print("Len train loader: ", len(trainloader))
     if args.ssm_type == "s5":
         print("Layer type: s5")
         print("ssm_size: ", ssm_size, "bidirectional: ", args.bidirectional)
+        # Initialize state matrix A using approximation to HiPPO-LegS matrix
+        Lambda, _, B, V, B_orig = make_DPLR_HiPPO(block_size)
+
+        if args.conj_sym:
+            block_size = block_size // 2
+            ssm_size = ssm_size // 2
+
+        Lambda = Lambda[:block_size]
+        V = V[:, :block_size]
+        Vc = V.conj().T
+
+        # If initializing state matrix A as block-diagonal, put HiPPO approximation
+        # on each block
+        Lambda = (Lambda * np.ones((args.blocks, block_size))).ravel()
+        V = block_diag(*([V] * args.blocks))
+        Vinv = block_diag(*([Vc] * args.blocks))
+
+        print("Lambda.shape={}".format(Lambda.shape))
+        print("V.shape={}".format(V.shape))
+        print("Vinv.shape={}".format(Vinv.shape))
         ssm_init_fn = init_S5SSM(
             H=args.d_model,
             P=ssm_size,
@@ -139,8 +138,9 @@ def train(args):
             clip_eigs=args.clip_eigs,
             bidirectional=args.bidirectional,
         )
+
     elif args.ssm_type == "lru":
-        from s5.rares_layers import LRU
+        from s5.lru import LRU
 
         ssm_init_fn = partial(
             LRU,
@@ -151,24 +151,9 @@ def train(args):
             max_phase=args.max_phase,
             bidirectional=args.bidirectional,
         )
-        # from s5.rares_layers import LRU2
-        # print("LRU ssm type")
-        # sm_init_fn = partial(LRU2, N=args.ssm_size_base, H=args.d_model,r_min= args.r_min,r_max= args.r_max, max_phase=args.max_phase, bidirectional=False)
-    elif args.ssm_type == "rotblock":
-        from s5.rares_layers import GammaDecayBlockDiagEfficient
 
-        ssm_init_fn = partial(
-            GammaDecayBlockDiagEfficient,
-            lru_dim=args.ssm_size_base,
-            hidden_dim=args.d_model,
-            r_min=args.r_min,
-            r_max=args.r_max,
-            max_phase=args.max_phase,
-            nheads=args.nheads,
-            bidirectional=args.bidirectional,
-        )
     elif args.ssm_type == "rotrnn":
-        from s5.rares_layers import RotRNN
+        from s5.rotrnn import RotRNN
 
         ssm_init_fn = partial(
             RotRNN,
@@ -180,8 +165,10 @@ def train(args):
             n_heads=args.nheads,
             bidirectional=args.bidirectional,
         )
+
     else:
         raise ValueError("Unexpected ssm type")
+
     if retrieval:
         # Use retrieval head for AAN task
         print("Using Retrieval head for {} task".format(args.dataset))
