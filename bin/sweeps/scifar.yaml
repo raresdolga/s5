@@ -1,5 +1,5 @@
 program: run_train
-name: cifar_rotrnn_sweep
+name: sequential_cifar_rotrnn_sweep
 project: rotrnn_clean_sweeps
 entity: baesian-learning
 method: grid
@@ -8,7 +8,7 @@ metric:
   goal: maximize
 parameters:
   global_lr:
-    value: 0.004
+    values: [0.001, 0.004]
   ssm_lr_base:
     values: [0.001, 0.0005]
   r_min:
@@ -22,7 +22,7 @@ parameters:
   max_phase:
     values: [0.0314, 0.314, 3.14]
   nheads:
-    values: [32, 64]
+    value: 64
   opt_config:
     value: "standard"
   ssm_type:
@@ -40,7 +40,7 @@ parameters:
   d_model:
     value: 512
   dataset:
-    value: "lra-cifar-classification"
+    value: "cifar-classification"
   epochs:
     value: 250
   jax_seed:
