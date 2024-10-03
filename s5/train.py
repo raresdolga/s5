@@ -36,7 +36,7 @@ def train(args):
             job_type="model_training",
             config=vars(args),
             entity=args.wandb_entity,
-            mode="offline",
+            # mode="offline",
         )
     else:
         wandb.init(mode="offline")

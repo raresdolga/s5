@@ -28,7 +28,7 @@ parameters:
   ssm_type:
     value: "rotrnn"
   activation_fn:
-    value: "half_glu1"
+    value: "full_glu"
   batchnorm:
     value: "True"
   bn_momentum:
