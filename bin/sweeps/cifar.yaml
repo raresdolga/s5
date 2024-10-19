@@ -1,5 +1,5 @@
 program: run_train
-name: cifar_rotrnn_sweep
+name: cifar_rotrnn_sweep_fine_tune
 project: rotrnn_clean_sweeps
 entity: baesian-learning
 method: grid
@@ -8,27 +8,27 @@ metric:
   goal: maximize
 parameters:
   global_lr:
-    value: 0.004
+    values: [0.001, 0.002, 0.003, 0.004, 0.005]
   ssm_lr_base:
-    values: [0.001, 0.0005]
+    value: 0.001
   r_min:
-    values: [0.001, 0.5, 0.9]
+    value: 0.000000001
   r_max:
-    values: [0.999, 0.9999]
+    value: 0.9999
   p_dropout:
-    values: [0.1, 0.0]
+    value: 0.1
   weight_decay:
     value: 0.05
   max_phase:
-    values: [0.0314, 0.314, 3.14]
+    value: 6.28
   nheads:
-    values: [32, 64]
+    value: 64
   opt_config:
-    value: "standard"
+    value: "BfastandCdecay"
   ssm_type:
     value: "rotrnn"
   activation_fn:
-    value: "full_glu"
+    value: "half_glu1"
   batchnorm:
     value: "True"
   bn_momentum:
