@@ -121,6 +121,12 @@ class LRU(nn.Module):
                 [inner_states, backward], axis=-1
             )  # BLN -> BL2N
 
+        x_norm = jnp.sqrt(
+            jnp.einsum("...i,...i->...", inner_states.real, inner_states.real)
+            + jnp.einsum("...i,...i->...", inner_states.imag, inner_states.imag)
+        ).mean()
+        self.sow("intermediates", "x_norm", x_norm)
+
         y = jnp.einsum("HN,LN->LH", C, inner_states).real + jnp.einsum("H,LH->LH", D, x)
         # y = jax.vmap(lambda x, u: (x@C.T).real + D * u)(inner_states, x).transpose(1,0,2) # LBH -> BLH
         return y

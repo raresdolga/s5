@@ -118,6 +118,8 @@ class RotRNN(nn.Module):
 
         # concatenate heads
         x = x.transpose(1, 0, 2).reshape(T, -1)
+        x_norm = jnp.sqrt(jnp.einsum("...i,...i->...", x, x)).mean()
+        self.sow("intermediates", "x_norm", x_norm)
 
         # apply output projection/head mixing and skip connection
         y = jax.vmap(lambda a: C @ a)(x) + D * input_sequence
