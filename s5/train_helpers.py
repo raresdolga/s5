@@ -461,9 +461,7 @@ def prep_batch(
     return full_inputs, targets.astype(float), integration_timesteps
 
 
-def train_epoch(
-    state, rng, model, trainloader, seq_len, in_dim, batchnorm, lr_params, epoch
-):
+def train_epoch(state, rng, model, trainloader, seq_len, in_dim, batchnorm, lr_params):
     """
     Training function for an epoch that loops over batches.
     """
