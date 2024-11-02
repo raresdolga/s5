@@ -116,10 +116,15 @@ singularity build S5.sif ./bin/singularity/img.def.def
 
 # create a sweep id
 wandb sweep --project sweep_rotrnn ./bin/wandb/cifar.yaml
-pdm run wandb sweep --project sweep_rotrnn ./bin/sweeps/cifar.yaml
+pdm run wandb sweep --project rotrnn_clean_sweeps ./bin/sweeps/pathx.yaml
+
+# start sweep
+XLA_PYTHON_CLIENT_MEM_FRACTION=100 CUDA_VISIBLE_DEVICES=0 pdm run wandb agent baesian-learning/rotrnn_clean_sweeps/8iif4r57 > 'sweep_pathx0.log' 2>&1 &
+
+
 # cancel sweeps
 wandb sweep --cancel baesian-learning/sweep_rotrnn/zd89hg0q
 
-# run this command multiple times on different gpus: Contains agent starting the sweep goven an id
+# run this command multiple times on different gpus: Contains agent starting the sweep given an id
 nohup bash bin/run_experiments/run_lra_cifar2.sh  > 'sweep_rot_block4.log' 2>&1 &
 ```

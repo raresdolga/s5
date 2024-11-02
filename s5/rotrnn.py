@@ -101,21 +101,22 @@ class RotRNN(nn.Module):
         gammas = jnp.repeat(gammas[:, None], repeats=T, axis=1)
         thetas = jnp.repeat(thetas[:, None], repeats=T, axis=1)
         rec_fn = jax.vmap(
-            lambda a, b, c: parallel_scan(self.binf, (a, b, c)),
-            in_axes=(0, 0, 0),
+            lambda a, b, c, r: parallel_scan(self.binf, (a, b, c), reverse=r),
+            in_axes=(0, 0, 0, None),
             out_axes=0,
         )
-        hidden_states = rec_fn(gammas, thetas, x)[2]
+        hidden_states = rec_fn(gammas, thetas, x, False)[2]
 
         # project back with P
-        x = jnp.einsum("HDi, HTi -> HTD", P, hidden_states)
+        y = jnp.einsum("HDi, HTi -> HTD", P, hidden_states)
 
         if self.bidirectional:
-            backward = rec_fn(gammas, thetas, hidden_states, reverse=True)[2]
+            backward = rec_fn(gammas, thetas, x, True)[2]
             backward = jnp.einsum("HDi, HTi -> HTD", P, backward)
-            x = jnp.concatenate([x, backward], axis=-1)
+            x = jnp.concatenate([y, backward], axis=-1)
             C = jnp.concatenate([C, C2], axis=-1)
-
+        else:
+            x = y
         # concatenate heads
         x = x.transpose(1, 0, 2).reshape(T, -1)
 

@@ -1,78 +1,154 @@
+# program: run_train
+# name: pathx_rotrnn_sweep
+# project: sweep_rotrnn
+# entity: baesian-learning
+# method: grid
+# metric:
+#   name: Best Val Accuracy
+#   goal: maximize
+# parameters:
+#   nheads:
+#     values: [32, 64]
+#   global_lr:
+#     value: [0.002, 0.004]
+#   ssm_lr:
+#     values: [0.001, 0.0005]
+#   r_min:
+#     values: [0.9, 0.99]
+#   r_max:
+#     value: 0.9999
+#   wd:
+#     value: 0.05
+#   dropout:  [0.0, 0.1]
+#   max_phase:
+#     values: [0.0314, 0.314, 6.28]  # pi/100, pi/10, 2pi
+#   opt_config:
+#     value: 'BfastandCdecay'
+#   ssm_type:
+#     value: "rotblock" # "lru"
+  
+
+# command:
+# - pdm
+# - run
+# - "-p"
+# - "/cluster/project7/biegunk_phd/s5"
+# - python
+# - "-u"
+# - "-m"
+# - ${program}
+# - "--C_init"
+# - "complex_normal"
+# - "--batchnorm"
+# - "True"
+# - "--bidirectional"
+# - "True"
+# - "--blocks"
+# - "16"
+# - "--bsz"
+# - "32"
+# - "--bn_momentum"
+# - "0.9"
+# - "--d_model"
+# - "128"
+# - "--dataset"
+# - "pathx-classification"
+# - "--epochs"
+# - "75"
+# - "--jax_seed"
+# - "6429262"
+# - "--n_layers"
+# - "6"
+# - "--p_dropout"
+# - "0.0"
+# - "--ssm_size_base"
+# - "256"
+# - "--warmup_end"
+# - "1"
+# - "--weight_decay"
+# - "0.05"
+# - "--activation_fn"
+# - "half_glu1"
+# - "--conj_sym"
+# - "False"
+# - "--dt_min"
+# - "0.0001"
+# - "--USE_WANDB"
+# - "True"
+# - ${args}
+# - "--wandb_project"
+# - "s5_lra_sweeps"
+# - "--wandb_entity"
+# - "baesian-learning"
+
+
 program: run_train
-name: pathx_rotrnn_sweep
-project: sweep_rotrnn
+name: pathx_latest_rotrnn_sweep
+project: rotrnn_clean_sweeps
 entity: baesian-learning
 method: grid
 metric:
   name: Best Val Accuracy
   goal: maximize
 parameters:
-  nheads:
-    values: [32, 64]
-  lr_factor:
-    value: 3
+  global_lr:
+    value: 0.004
+  ssm_lr_base:
+    values: [0.002, 0.004]
   r_min:
-    values: [0.99, 0.999]
+    values: [0.9, 0.99]
   r_max:
     value: 0.9999
+  p_dropout:
+    values: [0.0, 0.1]
+  weight_decay:
+    value: 0.05
   max_phase:
-    values: [0.0314, 0.314, 6.28]  # pi/100, pi/10, 2pi
+    values: [0.0314, 0.314]
+  nheads:
+    value: 64
   opt_config:
-    value: 'BfastandCdecay'
+    value: "standard" #  'BfastandCdecay'
   ssm_type:
-    value: "rotblock" # "lru"
-  ssm_lr_base:
-    values: [0.001, 0.0001]
-
+    value: "rotrnn"
+  activation_fn:
+    value: "half_glu1"
+  batchnorm:
+    value: "True"
+  bn_momentum:
+    value: 0.9
+  bidirectional:
+    value: "True"
+  bsz:
+    value: 32
+  d_model:
+    value: 128
+  dataset:
+    value: "pathx-classification"
+  epochs:
+    value: 75
+  jax_seed:
+    value: 16416
+  n_layers:
+    value: 6
+  ssm_size_base:
+    value: 256
+  warmup_end:
+    value: 1
+  conj_sym:
+    value: "False"
+  
 command:
 - pdm
 - run
-- "-p"
-- "/cluster/project7/biegunk_phd/s5"
 - python
 - "-u"
 - "-m"
 - ${program}
-- "--C_init"
-- "complex_normal"
-- "--batchnorm"
-- "True"
-- "--bidirectional"
-- "True"
-- "--blocks"
-- "16"
-- "--bsz"
-- "32"
-- "--bn_momentum"
-- "0.9"
-- "--d_model"
-- "128"
-- "--dataset"
-- "pathx-classification"
-- "--epochs"
-- "75"
-- "--jax_seed"
-- "6429262"
-- "--n_layers"
-- "6"
-- "--p_dropout"
-- "0.0"
-- "--ssm_size_base"
-- "256"
-- "--warmup_end"
-- "1"
-- "--weight_decay"
-- "0.05"
-- "--activation_fn"
-- "half_glu1"
-- "--conj_sym"
-- "False"
-- "--dt_min"
-- "0.0001"
 - "--USE_WANDB"
 - "True"
 - ${args}
 - "--wandb_project"
-- "s5_lra_sweeps"
+- "s5_rotrnn"
 - "--wandb_entity"
 - "baesian-learning"
