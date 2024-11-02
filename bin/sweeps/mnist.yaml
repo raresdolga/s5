@@ -1,0 +1,68 @@
+program: run_train
+name: mnist_rotrnn_sweep
+project: rotrnn_clean_sweeps
+entity: baesian-learning
+method: grid
+metric:
+  name: Best Val Accuracy
+  goal: maximize
+parameters:
+  global_lr:
+    value: 0.008
+  ssm_lr_base:
+    value: 0.002
+  r_min:
+    values: [0.00001, 0.1, 0.5, 0.9]
+  r_max:
+    values: [0.99, 0.999, 0.9999]
+  p_dropout:
+    value: 0.1
+  weight_decay:
+    value: 0.05
+  max_phase:
+    value: 6.28
+  nheads:
+    value: 32
+  opt_config:
+    value: "standard"
+  ssm_type:
+    value: "rotrnn"
+  activation_fn:
+    value: "half_glu1"
+  batchnorm:
+    value: "True"
+  bn_momentum:
+    value: 0.95
+  bidirectional:
+    value: "False"
+  bsz:
+    value: 50
+  d_model:
+    value: 128
+  dataset:
+    value: "mnist-classification"
+  epochs:
+    value: 150
+  jax_seed:
+    value: 16416
+  n_layers:
+    value: 4
+  ssm_size_base:
+    value: 384
+  warmup_end:
+    value: 1
+  
+command:
+- pdm
+- run
+- python
+- "-u"
+- "-m"
+- ${program}
+- "--USE_WANDB"
+- "True"
+- ${args}
+- "--wandb_project"
+- "s5_rotrnn"
+- "--wandb_entity"
+- "baesian-learning"
