@@ -40,7 +40,7 @@ parameters:
   d_model:
     value: 128
   dataset:
-    value: "mnist-classification"
+    value: "pmnist-classification"
   epochs:
     value: 150
   jax_seed:
